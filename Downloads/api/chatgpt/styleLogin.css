@@ -1,0 +1,22 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.googleButton{
+    padding: 5px;
+    margin-top: 200px;
+    margin-left: 20px;
+}
+
+.fbButton{
+    margin-top: 50px;
+    margin-left: 50px;
+    width: 100px;
+    position: relative;
+}
+
+.fb-login-button{
+    padding: 50px;
+}

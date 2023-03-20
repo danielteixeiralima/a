@@ -1,0 +1,132 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+div{
+    display: inline-block;
+}
+
+body {
+    background-color: #1d1e23;
+    display: flex;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+}
+
+.content{
+    width: 90%;
+    flex-direction: column;
+    justify-content: space-around;
+    display: inline;
+}
+
+textarea{
+    resize: none;
+    border: none;
+    padding: 8px;
+    background-color: #3c3d46;
+    color: white;
+    outline: none;
+    font-size: 24px;
+    text-align: justify;
+    width: 50%;
+}
+
+textarea:focus {
+    border: 1px solid #8257e5;
+}
+
+.params {
+    margin-top: 80px;
+    width: 50%;
+    height: 545px;
+}
+
+.result{
+    margin-top: 80px;
+    width:50%;
+    height: 535px;
+    display: block;
+}
+
+h2{
+    color: white;
+    font-size: 25px;
+    position: relative;
+    width: 180px;
+}
+
+.logout{
+    background-color: white;
+    position: relative;
+    display: block;
+    top: 580px;
+    right: 680px;
+    width: 150px;
+}
+
+#menu {
+    position: fixed;
+    top: 0;
+    left: -250px;
+    width: 250px;
+    height: 100%;
+    background-color: #333;
+    padding: 20px;
+    transition: all 0.3s ease-in-out;
+    z-index: 999;
+}
+#menu.open {
+    left: 0;
+}
+#menu a {
+    display: block;
+    color: #fff;
+    margin-bottom: 10px;
+    font-size: 18px;
+    text-decoration: none;
+}
+#menu a:hover {
+    color: #ff0;
+}
+/* Estilos CSS para o botão de abrir/fechar o menu */
+#menu-toggle {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    cursor: pointer;
+    z-index: 999;
+}
+#menu-toggle span {
+    display: block;
+    width: 30px;
+    height: 3px;
+    background-color: #fff;
+    margin-bottom: 5px;
+    transition: all 0.3s ease-in-out;
+}
+#menu-toggle.open span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+#menu-toggle.open span:nth-child(2) {
+    opacity: 0;
+}
+#menu-toggle.open span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -6px);
+}
+/* Estilos CSS para o botão de fechar o menu */
+#close-menu {
+    position: fixed;
+    top: 11px;
+    right: 1120px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 35px;
+    z-index: 999;
+}
+#close-menu:hover {
+    color: #ff0;
+}

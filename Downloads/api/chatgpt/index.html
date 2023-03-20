@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale">
+        <title> Chat GPT </title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+
+            <div class ="params" align="center">
+                <textarea id="instagram" placeholder="Instagram" style="width: 90%"></textarea>
+                <textarea id="facebook" placeholder="Facebook" style="width: 90%"></textarea>
+                <textarea id="inputQuestion" placeholder="Pergunte algo" style="width: 90%; height:60%" ></textarea>
+            </div>
+            <div class="result" align="center">
+                <textarea id="result" rows="10" disabled placeholder="Resposta da IA" style="width: 90%; height:90%" ></textarea>
+            </div>
+
+        <script src="scripts.js"></script>
+    <h2 id="name"/>
+    <img id="image"/>
+    <button onclick="logout()" class="logout" style="height:40px">Logout</button>
+    </body>
+    <script>
+		function requestAPI(){
+			FB.api('me?fields=id,name,picture', function(response){
+				if(response){
+					console.log(response);
+				}
+			})
+		  }
+            // Parse query string to see if page request is coming from OAuth 2.0 server.
+            var params = {};
+            var regex = /([^&=]+)=([^&]*)/g, m;
+            while (m = regex.exec(location.href)) {
+                params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+            }
+            if (Object.keys(params).length > 0) {
+                localStorage.setItem('authInfo', JSON.stringify(params));
+            }
+            window.history.pushState({}, document.title, "/" + "chatgpt");
+            let info = JSON.parse(localStorage.getItem('authInfo'))
+            console.log(info['access_token'])
+            console.log(info['expires_in'])
+             fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                headers: {
+                    "Authorization": `Bearer ${info['access_token']}`
+                }
+            })
+                .then(data => data.json())
+                .then((info) => {
+                    console.log(info)
+                    document.getElementById('name').innerHTML += info.name
+                    document.getElementById('image').setAttribute('src',info.picture)
+
+                })
+
+            </script>
+            <body>
+
+                <script>
+                    function logout(){
+                        fetch("https://oauth2.googleapis.com/revoke?token=" + info['access_token'],
+                        {
+                            method: 'POST',
+                            headers: {
+                                "Content-type": "application/x-www-form-urlencoded"
+                            }
+                        })
+                        .then((data) => {
+                            location.href = "http://localhost/chatgpt/login.html"
+                        })
+                    }
+                </script>
+
+        </body>
+        <meta charset="UTF-8">
+</head>
+<body>
+	<!-- Botão para abrir/fechar o menu -->
+	<div id="menu-toggle" onclick="toggleMenu()">
+		<span></span>
+		<span></span>
+		<span></span>
+	</div>
+	<!-- Menu lateral com lista de páginas -->
+	<div id="menu">
+	
+	</div>
+	<script>
+		// Função para abrir/fechar o menu
+		function toggleMenu() {
+			var menu = document.getElementById('menu');
+			var menuToggle = document.getElementById('menu-toggle');
+			if (menu.classList.contains('open')) {
+				menu.classList.remove('open');
+				menuToggle.classList.remove('open');
+			} else {
+				menu.classList.add('open');
+				menuToggle.classList.add('open');
+			}
+		}
+	</script>
+</html>
+<!DOCTYPE html>
+<html>
+<body>
+	<!-- Botão para abrir/fechar o menu -->
+	<div id="menu-toggle" onclick="toggleMenu()">
+	</div>
+	<!-- Menu lateral com lista de páginas -->
+	<div id="menu">
+	</div>
+	<!-- Botão para fechar o menu -->
+	<div id="close-menu" onclick="toggleMenu()">
+        <script>document.getElementById("close-menu").style.display = "none"</script>
+		&times
+	</div>
+	<script>
+		// Função para abrir/fechar o menu
+		function toggleMenu() {
+			var menu = document.getElementById('menu');
+			var menuToggle = document.getElementById('menu-toggle');
+            var closeMenu = document.getElementById('close-menu');
+			if (menu.classList.contains('open')) {
+				menu.classList.remove('open');
+				menuToggle.classList.remove('open');
+                menuToggle.classList.add('closed');
+                closeMenu.classList.add('closed');
+                closeMenu.classList.remove('open');
+                document.getElementById("close-menu").style.display = "none"
+
+			} else {
+				menu.classList.add('open');
+				menuToggle.classList.add('open');
+                menuToggle.classList.remove('closed');
+                closeMenu.classList.remove('closed');
+                closeMenu.classList.add('open');
+                document.getElementById("close-menu").style.display = "block"
+			}
+        }
+    </script>
+</body>
+

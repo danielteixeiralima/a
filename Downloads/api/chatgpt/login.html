@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="styleLogin.css">
+</head>
+<body>
+  <script>
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '1433282707205038',
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v16.0',
+      });
+  </script>
+  
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/pt_BR/sdk.js#xfbml=1&version=v16.0&appId=1157520028267131&autoLogAppEvents=1" nonce="Ch3FFFeq"></script>
+  <div id="icone"/>
+  <div id="fb-root"></div>
+
+  <div class="row">
+    <div class="col-md-3">
+      <a class="btn btn-outline-dark" href="javascript:signIn()" role="button" style="text-transform:none">
+        <img width="20px" style="margin-bottom:3px; margin-right:5px" alt="Google sign-in" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" />
+        Login with Google
+      </a>
+    </div>
+  </div>
+  
+  <!-- Minified CSS and JS -->
+  <link   rel="stylesheet" 
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" 
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" 
+          crossorigin="anonymous">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" 
+          integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" 
+          crossorigin="anonymous">
+  </script>
+
+<script src="loginGoogle.js"></script>
+<script>
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '3311916552453612',
+        cookie     : true,
+        xfbml      : false,
+        version    : 'v16.0',
+      });
+    FB.getLoginStatus(function(response) {
+        statusChangeCallback(response);
+    });
+    };
+    function statusChangeCallback(response){
+        if(response.status == 'connected'){
+            console.log("Usuário Autorizado")
+            requestAPIS()
+            
+        }
+        else{
+            console.log("Usuário não autorizado")
+        }
+    }
+    (function(d, s, id){
+       var js, fjs = d.getElementsByTagName(s)[0];
+       if (d.getElementById(id)) {return;}
+       js = d.createElement(s); js.id = id;
+       js.src = "https://connect.facebook.net/en_US/sdk.js";
+       fjs.parentNode.insertBefore(js, fjs);
+     }(document, 'script', 'facebook-jssdk'));
+     function checkLoginState() {
+        FB.getLoginStatus(function(response) {
+          statusChangeCallback(response);
+        });
+      }
+
+      function requestAPI(){
+        FB.api('301496369908576/insights/page_impressions/month?access_token=EABTbff1nOukBAL8odv6wJ9uDftGVCQyVvrlZAJXOw07bG6zWYPzn1JpD8vIUz5h6ilEWvI4MF7cJPqBCYgxDS0ku5OD5W4qouEfIa7qPzgbWCr9qhE2GZAwozfPsQRpx5rPeQKH9RbDZA4ZAaP4EJu1ulFjLiizhUclrD1995OZCjmT4gVUIS74jxQbyZBkhNoEKZByyd6eaox6Lov20xH1ZBGZAMaSAh96YZD', function(response){
+            if(response){
+                console.log(response);
+            }
+        })
+      } 
+
+      function requestAPIS(){
+        FB.api('me?fields=business_users', function(response){
+            if(response){
+              for(var i =0;i<19;i++){
+                console.log(response.business_users.data[i].business.name);
+              }
+            }
+        })
+      } 
+      FB.Event.subscribe('auth.login', function () {
+        window.location = "http://localhost/chatgpt";
+    });
+
+      /* make the API call */
+  </script>
+  <fb:login-button class="fbButton"
+    scope="public_profile,email"
+    onlogin="checkLoginState();">
+</fb:login-button>
+</html>
