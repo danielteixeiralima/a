@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+
+<button id="authorize">Authorize</button>
+
+<script>
+document.getElementById("authorize").onclick = function () {
+    $.getJSON('http://localhost:5000/get_auth_url', function(data) {
+        window.location.href = data.authorization_url;
+    });
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,517 @@
+  {% extends "base.html" %}
+
+  {% block content %}
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Login</title>
+      <link rel="stylesheet" href="styleLogin.css">
+  </head>
+  <body>  
+    <script src="loginGoogle.js"></script>
+
+
+    <div class="row2">
+      <div class="col-md-3">
+        <a class="btn btn-outline-dark" href="javascript:checkLoginState()" role="button" style="text-transform:none">
+          <img  />
+          <fb:login-button size="large" class="fbButton" scope="public_profile,email"
+          onlogin="checkLoginState();">
+          Login with Facebook
+        </fb:login-button>
+        </a>
+      </div>
+    </div>
+    
+    <!-- <div class="form-group">
+      <label for="vincular_instagram"></label>
+      <select id="vincular_instagram" name="vincular_instagram"></select>
+    </div>  -->
+
+  <select id="empresa" name="empresa">
+   
+  </select><br><br>
+  <button id="buscar_token" onclick="buscaToken()">Gerar Posts</button>
+  <!-- <button id="next_posts" onclick="nextPage()">Próximos Posts</button> -->
+  <form class="form-style" method="post" onsubmit="event.preventDefault(); sendPostsToServer();">
+    <input type="submit" value="Cadastrar">
+</form>
+  <br><br>
+  <table id="tabela_posts" class="styled-table">
+    <thead>
+      <tr>
+        <th>Data de Criação</th>
+        <th>Legenda</th>
+        <th>Likes</th>
+        <th>N° de comentários</th>
+        <th>Alcance</th>
+        <th>Engajamento</th>
+        <th>Tipo de Mídia</th>
+        <th>Plays</th>
+        <th>Salvos</th>
+        <th>Nome da Empresa</th>
+      </tr>
+    </thead>
+    <tbody>
+    <!-- Os dados serão preenchidos aqui pelo JavaScript -->
+    </tbody>
+  </table>
+
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/pt_BR/sdk.js#xfbml=1&version=v16.0&appId=1157520028267131&autoLogAppEvents=1" nonce="Ch3FFFeq"></script>
+    <!-- <div id="icone"/>
+    <div class="row">
+      <div class="col-md-3">
+        <a class="btn btn-outline-dark" href="javascript:signIn()" role="button" style="text-transform:none">
+          <img width="20px" style="margin-bottom:3px; margin-right:5px" alt="Google sign-in" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" />
+          Login with Google
+        </a>
+      </div>
+    </div> -->
+    
+    
+
+
+    <script>
+    
+      window.onload = function() {
+        fetch('/api/empresas')
+          .then(response => response.json())
+          .then(empresas => {
+            const selectEmpresa = document.getElementById('empresa');
+            empresas.forEach(empresa => {
+              const option = document.createElement('option');
+              option.value = empresa;
+              option.text = empresa;
+              selectEmpresa.appendChild(option);
+            });
+          });
+      }
+
+      window.fbAsyncInit = function() {
+        FB.init({
+        appId      : '3311916552453612',
+        cookie     : true,
+        xfbml      : false,
+        version    : 'v17.0',
+        });
+    }
+    function loginStatus(){
+        FB.getLoginStatus(function(response) {
+            statusChangeCallback(response);
+        });
+    };
+      
+    (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = "https://connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+    }
+    (document, 'script', 'facebook-jssdk'));
+
+    function checkLoginState() {
+        FB.getLoginStatus(function(response) {
+            statusChangeCallback(response);
+        });
+        }
+
+        
+        var empresas = []
+        var ids = []
+        var token = ''
+        var id = ''
+        var idIG = ''
+        var idsPost = []
+        var listaNomes = []
+        var page = 0;
+        var listaReach = []
+        var nome_empresa = ''
+
+        async function statusChangeCallback(response){
+
+          if(response.status == 'connected'){
+            //console.log(response.authResponse.accessToken)
+            //console.log("Usuário Autorizado")
+            var empresa = await listaEmpresas();
+            localStorage.setItem('empresa', JSON.stringify(empresa));
+            var empresa = JSON.parse(localStorage.getItem('empresa'));
+            
+            var tokens = await listaTokens();
+            localStorage.setItem('tokens', JSON.stringify(tokens));
+            var tokens = JSON.parse(localStorage.getItem('tokens'));
+            
+            // Cria um array vazio para armazenar os pares de nomes das empresas e tokens
+            var listaEmpresaToken = [];
+            if (empresa.length == tokens.length) { // Verifica se os arrays têm o mesmo tamanho
+                for (var i = 0; i < tokens.length; i++) {
+                    listaEmpresaToken.push([empresa[i].name, tokens[i].access_token]);
+                    empresas.push([empresa[i].name, tokens[i].access_token])
+                    ids.push(empresa[i])
+                }
+            }
+            else {
+                console.log("Erro: os arrays empresa e tokens têm tamanhos diferentes");
+            }
+            //console.log(ids)
+            //console.log(listaEmpresaToken)
+            return empresas
+          }
+
+        }
+        async function sendPostsToServer() {
+          var listaNomes = JSON.parse(localStorage.getItem('listaNomes'));
+          for (var i = 0; i < listaNomes.length; i++) {
+              var post = listaNomes[i];
+      
+              // Verifique se o post já existe antes de enviá-lo
+              let res = await fetch('/verificar_post_existente', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: post.id })
+              });
+      
+              let jsonRes = await res.json();
+      
+              if (!jsonRes.exists) {
+                  // O post não existe, envie-o ao servidor
+      
+                  // Crie um objeto FormData para segurar os dados do post
+                  var formData = new FormData();
+                  formData.append('id', post.id)
+                  formData.append('id_empresa', post.id_empresa);
+                  formData.append('timestamp', post.timestamp);
+                  formData.append('caption', post.caption);
+                  formData.append('like_count', post.like_count);
+                  formData.append('comments_count', post.comments_count);
+                  formData.append('reach', post.reach);
+                  formData.append('percentage', post.percentage);
+                  formData.append('media_product_type', post.media_product_type);
+                  formData.append('plays', post.plays);
+                  formData.append('saved', post.saved);
+                  formData.append('nome_empresa', post.nome_empresa);
+      
+                  // Adicionando a linha para sempre enviar analisado como false
+                  formData.append('analisado', 0);
+      
+                  // Faça a solicitação POST para o servidor
+                  let response = await fetch('/analise_posts', {
+                      method: 'POST',
+                      body: formData
+                  });
+      
+                  if (response.ok) {
+                      console.log('Post enviado com sucesso para o servidor');
+                      console.log(response)
+                  } else {
+                      console.log('Erro ao enviar o post para o servidor:', response.status, response.statusText);                  
+                  }
+              } else {
+                  console.log(`Post com id ${post.id} já existe.`);
+              }
+          }
+      }
+
+      async function saveSeguidores() {
+        var listaNomes = JSON.parse(localStorage.getItem('listaNomes'));
+        for (var i = 0; i < listaNomes.length; i++) {
+            var seguidor = listaNomes[i];
+    
+            var formData = new FormData();
+            formData.append('id', seguidor.id);
+            formData.append('id_empresa', seguidor.id_empresa);
+            formData.append('data_criacao', seguidor.timestamp);
+            formData.append('nome_empresa', seguidor.nome_empresa);
+            formData.append('seguidores', seguidor.seguidores);
+    
+            let response = await fetch('/salvar_seguidores', {
+                method: 'POST',
+                body: formData
+            });
+    
+            if (response.ok) {
+                console.log('Seguidor enviado com sucesso para o servidor');
+                console.log(response)
+            } else {
+                console.log('Erro ao enviar seguidor para o servidor:', response.status, response.statusText);
+            }
+        }
+    }
+
+        statusChangeCallback(response).then(() => {
+          buscaToken();
+        });
+        async function buscaToken(){
+          clearTable()
+          listaNomes = JSON.parse(localStorage.getItem('listaNomes'));
+          listaNomes = []
+          page = 0;
+          let selectElement = document.getElementById('empresa');
+          nome_empresa = selectElement.options[selectElement.selectedIndex].text;
+          for (var i = 0; i < empresas.length; i++) {
+            //console.log(empresas[i][1])
+            if(nome_empresa == empresas[i][0]){
+              token = empresas[i][1]
+              id = ids[i].id
+            }
+          }
+
+          //console.log(id)
+
+          var impressao = await impressoes();
+          localStorage.setItem('impressao', JSON.stringify(impressao));
+          var impressao = JSON.parse(localStorage.getItem('impressao'));
+          //console.log(token)
+
+        }
+    
+        function listaTokens() {
+          return new Promise((resolve, reject) => {
+              let tokens = [];
+      
+              FB.api('me?fields=accounts{access_token}', function(response) {
+                  if (response && response.accounts && response.accounts.data) {
+                      tokens = tokens.concat(response.accounts.data);
+                      let url = response.accounts.paging.next
+      
+                      FB.api(url, function(response) {
+                          if (response &&  response.data) {
+                              tokens = tokens.concat(response.data);
+                              resolve(tokens);
+                          } else {
+                              reject('Não foi possível recuperar os tokens');
+                          }
+                      });
+                  } else {
+                      reject('Não foi possível recuperar os tokens');
+                  }
+              });
+          });
+      }
+
+      function listaEmpresas() {
+        return new Promise((resolve, reject) => {
+            let empresa = [];
+    
+            FB.api('me?fields=accounts{name}', function(response) {
+                if (response && response.accounts && response.accounts.data) {
+                    empresa = empresa.concat(response.accounts.data);
+                    let url = response.accounts.paging.next
+    
+                    FB.api(url, function(response) {
+
+                        if (response && response.data) {
+                            empresa = empresa.concat(response.data);
+                            resolve(empresa);
+                        } else {
+                            reject('Não foi possível recuperar as empresas');
+                        }
+                    });
+                } else {
+                    reject('Não foi possível recuperar as empresas');
+                }
+            });
+        });
+    }
+
+        function instagramId() {
+          return new Promise((resolve, reject) => {
+            FB.api(id+'?fields=connected_instagram_account&access_token=' +token, async function(response){
+              if(response.error) {
+                reject(response.error);
+              } else {
+                //console.log(response.connected_instagram_account);
+                idIG = response.connected_instagram_account
+                localStorage.setItem('idIG', JSON.stringify(idIG))
+                var media = await mediaIG();
+                localStorage.setItem('media', JSON.stringify(media));
+                var media = JSON.parse(localStorage.getItem('media'));
+              }
+            });
+          });
+        }
+      
+     
+
+        function mediaIG() {
+          idsPost = []
+          return new Promise((resolve, reject) => {
+            idIG = JSON.parse(localStorage.getItem('idIG'));
+//            console.log(idIG)
+            FB.api(idIG.id+'?fields=media&access_token=' +token, async function(response){
+
+              //console.log(response)
+
+              for (var i = 0; i < response.media.data.length; i++) {
+              
+                idsPost.push(response.media.data[i].id)
+              }
+              //console.log(idsPost)
+              localStorage.setItem('idsPost', JSON.stringify(idsPost));
+              localStorage.setItem('listaNomes', JSON.stringify(listaNomes));
+              var nome = await nomes();
+              localStorage.setItem('nome', JSON.stringify(nome));
+              var nome = JSON.parse(localStorage.getItem('nome'));
+
+           
+            });
+          });
+        }
+
+
+
+        function nomes() {
+          return new Promise((resolve, reject) => {
+              var idsPost = JSON.parse(localStorage.getItem('idsPost'));
+              var promises = [];
+              for (var i = 0; i < idsPost.length; i++) {
+                  var postPromise = new Promise((resolve, reject) => {
+                      var postID = idsPost[i];
+                      var idIG = JSON.parse(localStorage.getItem('idIG'));
+      
+                      Promise.all([
+                          new Promise((resolve, reject) => {
+                              FB.api(postID+'?fields=caption,timestamp,like_count,comments_count,media_product_type&access_token=' + token, resolve);
+                          }),
+                          new Promise((resolve, reject) => {
+                              FB.api(postID+'/insights/reach,saved', resolve);
+                          }),
+                          new Promise((resolve, reject) => {
+                              FB.api(postID+'/insights/plays', resolve);
+                          }),
+                          new Promise((resolve, reject) => {
+                            FB.api(idIG+'?fields=followers_count', resolve);
+                        }),
+                      ]).then((responses) => {
+                          var postDetails = responses[0];
+                          var reachDetails = parseInt(responses[1].data[0].values[0].value);
+                          var save = parseInt(responses[1].data[1].values[0].value);
+                          var play = 0;
+                          if(postDetails.media_product_type == 'REELS'){
+                              play = parseInt(responses[2].data[0].values[0].value);
+                          }
+
+                          var followersCount = responses[3].followers_count;
+                          var percentage = 0;
+                          if(reachDetails != 0){
+                              percentage = parseFloat(((postDetails.like_count + postDetails.comments_count) / reachDetails) * 100).toFixed(2);
+                          }
+                          postDetails.timestamp = new Date(postDetails.timestamp).toISOString();
+      
+                          var combinedDetails = {...postDetails, id: postID, reach: reachDetails, id_empresa: idIG, percentage: percentage, plays: play, saved: save, nome_empresa: nome_empresa, seguidores: followersCount};
+                          resolve(combinedDetails);
+                      }).catch(reject);
+                  });
+                  promises.push(postPromise);
+              }
+              Promise.all(promises).then((listaNomes) => {
+                  listaNomes = listaNomes.filter(function(n){ return n !== null });
+                  listaNomes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                  localStorage.setItem('listaNomes', JSON.stringify(listaNomes));
+                  populateTable();
+                  resolve();
+              }).catch(reject);
+          });
+      }
+
+
+    
+
+  function impressoes() {
+    return new Promise((resolve, reject) => {
+      FB.api(id+'?fields=posts&access_token=' +token, async function(response){
+
+        //console.log(response.posts.data)
+        var instagramID = await instagramId();
+          localStorage.setItem('instagramID', JSON.stringify(instagramID));
+          var instagramID = JSON.parse(localStorage.getItem('instagramID'));
+      });
+    });
+  }
+
+  
+
+    function populateTable() {
+      clearTable()
+      var listaNomes = JSON.parse(localStorage.getItem('listaNomes'));
+      var table = document.getElementById('tabela_posts').getElementsByTagName('tbody')[0];
+    
+      for (var i = 0; i < listaNomes.length ; i++) {
+        var newRow = table.insertRow(table.length);
+        var cell1 = newRow.insertCell(0);
+        var cell2 = newRow.insertCell(1);
+        var cell3 = newRow.insertCell(2);
+        var cell4 = newRow.insertCell(3);
+        var cell5 = newRow.insertCell(4);
+        var cell6 = newRow.insertCell(5);
+        var cell7 = newRow.insertCell(6);
+        var cell8 = newRow.insertCell(7);
+        var cell9 = newRow.insertCell(8);
+        var cell10 = newRow.insertCell(9);
+        
+        cell1.innerHTML = listaNomes[i].timestamp;
+        cell2.innerHTML = listaNomes[i].caption;
+        cell3.innerHTML = listaNomes[i].like_count;
+        cell4.innerHTML = listaNomes[i].comments_count;
+        cell5.innerHTML = listaNomes[i].reach;
+        cell6.innerHTML = listaNomes[i].percentage;
+        cell7.innerHTML = listaNomes[i].media_product_type;
+        cell8.innerHTML = listaNomes[i].plays;
+        cell9.innerHTML = listaNomes[i].saved;
+        cell10.innerHTML = listaNomes[i].nome_empresa;
+       
+      }
+      
+    }
+
+    function clearTable() {
+      var table = document.getElementById('tabela_posts').getElementsByTagName('tbody')[0];
+      while (table.hasChildNodes()) {  
+        table.removeChild(table.firstChild);
+      }
+    }
+
+    </script>
+    <!-- Minified CSS and JS -->
+    <link   rel="stylesheet"
+            href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" 
+            integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" 
+            crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" 
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" 
+            crossorigin="anonymous">
+    </script>
+
+
+
+  </div>
+  </html>
+
+  <!-- https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&
+    client_id=3311916552453612&
+    client_secret=7d134fa373c858a0d9972b95aad34604&
+    fb_exchange_token=EAAvEK6mifewBABVgXSomZBF9d1dR7hPMZCmayy6xO2tjrHOGdHGmOnTkxTdtk6CR1nHbKiob3SrPXfQSs3FdC1jhZAhFVBvR4a8wrszN1lwyLhJTZBDVZB56ZC3f517l9cu9dGXhTQwZC6K0KRq5cZBbOwrizrB4SBfxTcxpEslu2T6z0RFofUItgpKxFGeZCSA7E5ZAdkHjh6oI1i5Piicrf0aOpWba5a2OoZD
+
+  access token bizarte long lived usuario = EABTbff1nOukBAPZCbRLtICdAHJBlfm2PTg61qWKdSuZCmq3QxOzE5hZB7KWZAUeurBPDhemOO6IqNIUPU5femZCTajPtsSOMLOaLocbmFiZASf2tTjlRZARTIzTbXxYshRZCROC57aihka9tlCFsiOz3aNKpH62nolmjanRm6dDZCXeMMmNIZCGrf9ff33CpVm65GaOH9gvuw1O9QVPDvw5NZABdADy542UppoZD   -->
+  <!-- access token bizarte long lived pagina = EAAvEK6mifewBAJYQDHFQk3x3K34ZBwvUA9clcefyiZCJTe5BcaletcXgiUwCNQ2pdj5czBy5f9CkKbNQmZB3Mg2yijUZAuzdyv2OIZBYhSuG8y8dZAZAGy2X89njcO8tPC2UE8DjP9NiiNSHXELnA5tVHcZBKmIGGFELIAsHOZB8ZCSl470kKIZCLPXeIsIP62ZB6lZCYFLugxZBZCHcQZDZD
+
+  https://graph.facebook.com/3311916552453612/accounts?
+    fields=name,access_token&
+    access_token=EAAvEK6mifewBAHf5wtoZCs355D3Iwy6lx3ReCT3ocLl0XZCKazTapKfZBvH0IHSc9Go6XSucMY2GgvBT5AxfNbQy2jZB3nnywwzgGxXFij2ImaniG1nBZAjQCmkjf4SxZCGnZBQzqEQeyigPvwxQ0nZAcWb8AGecWQi4kkNoYjTxWSoJnkXgyAjzBPs0R1dkHGAZD
+
+    -->
+  <!-- 
+    https://graph.facebook.com/oauth/access_token
+    ?client_id=5870833703009001
+    &client_secret=e5cad391598df96b69773d2e9c3c8776
+    &grant_type=client_credentials -->
+
+    <!-- echo -e "const API_KEY = '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';\n\nexport default API_KEY;" > apikey.js
+    echo -e "const ACCESS_TOKEN = 'EAAvEK6mifewBAJYQDHFQk3x3K34ZBwvUA9clcefyiZCJTe5BcaletcXgiUwCNQ2pdj5czBy5f9CkKbNQmZB3Mg2yijUZAuzdyv2OIZBYhSuG8y8dZAZAGy2X89njcO8tPC2UE8DjP9NiiNSHXELnA5tVHcZBKmIGGFELIAsHOZB8ZCSl470kKIZCLPXeIsIP62ZB6lZCYFLugxZBZCHcQZDZD';\n\nexport default ACCESS_TOKEN; > accessToken.js -->
+
+  
+    {% endblock %}
+

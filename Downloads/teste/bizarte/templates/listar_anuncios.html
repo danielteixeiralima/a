@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lista de Anúncios</title>
+  <link rel="stylesheet" href="styleLogin.css">
+</head>
+<body>
+  <br><br>
+  <select id="empresa" name="empresa">
+    {% for empresa in empresas %}
+      <option value="{{ empresa.id }}" data-name="{{ empresa.vincular_anuncio }}">{{ empresa.vincular_anuncio}}</option>
+    {% endfor %}
+  </select><br>
+  <br>
+  <br>
+  <button id="filtrar-anuncios" onclick="filtraAnuncios()">Filtrar Anúncios</button>
+  <button id="analisar-anuncios" onclick="return confirm('O processo de análise de anúncios pode demorar um pouco e integra diretamente com o ChatGPT-4 por meio de API. Você deseja continuar?') && analisarAnuncios(document.getElementById('empresa').value)">Analisar Anúncios</button>
+  <button id="analisar-todas-as-empresas" onclick="return confirm('O processo de análise de anúncios para todas as empresas pode demorar bastante e integra diretamente com o ChatGPT-4 por meio de API. Você deseja continuar?')">Analisar Todas as Empresas</button>
+  <br><br>
+  <table class="styled-table">
+    <thead>
+      <tr>
+        <th>Data de Criação</th>
+        <th>Campanha</th>
+        <th>Grupo do anúncio</th>
+        <th>Anúncio</th>
+        <th>Valor gasto</th>
+        <th>Impressões</th>
+        <th>Landing page views</th>
+        <th>CPM</th>
+        <th>CTR</th>
+        <th>CPC</th>
+        <th>Nome da Empresa</th>
+        <th>Post analisado</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="anuncio-table-body" class="styled-table">
+      {% for anuncio in anuncios %}
+      <tr>
+          <td>{{ anuncio.timestamp }}</td>
+          <td>{{ anuncio.campanha }}</td>
+          <td>{{ anuncio.grupo_anuncio }}</td>
+          <td>{{ anuncio.anuncio }}</td>
+          <td>{{ anuncio.valor_gasto }}</td>
+          <td>{{ anuncio.impressoes }}</td>
+          <td>{{ anuncio.landing_page_views }}</td>
+          <td>{{ anuncio.cpm }}</td>
+          <td>{{ anuncio.ctr }}</td>
+          <td>{{ anuncio.cpc }}</td>
+          <td>{{ anuncio.nome_empresa }}</td>
+          <td>{{ anuncio.analisado }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <script>
+
+    window.onload = function() {
+      fetch('/api/anuncios')
+        .then(response => response.json())
+        .then(empresas => {
+          const selectEmpresa = document.getElementById('empresa');
+          empresas.forEach(empresa => {
+            const option = document.createElement('option');
+            option.value = empresa;
+            option.text = empresa;
+            selectEmpresa.appendChild(option);
+          });
+        });
+    }
+    
+
+    function filtraAnuncios() {
+    var selectElement = document.getElementById('empresa');
+    var selectedOption = selectElement.options[selectElement.selectedIndex];
+    var empresaName = selectedOption.getAttribute('data-name');
+    console.log("Nome da empresa selecionada: " + empresaName);
+
+    fetch('/api/anuncios?empresa=' + empresaName)
+        .then(response => {
+            if (!response.ok) {
+                console.log("Erro ao buscar anúncios: " + response.status);
+                throw new Error('Erro ao buscar anúncios');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Anúncios recuperados com sucesso");
+            populateTable(data);
+        })
+        .catch(error => console.log("Erro: " + error));
+}
+
+    async function getPosts(empresa) {
+      let response = await fetch('/api/anuncios?empresa=' + empresa);
+      let data = await response.json();
+    
+      return data;
+    }
+    
+
+    
+
+  async function deletePost() {
+    var id = currentPostId;
+    var url = '/deletar_post/' + id;
+
+    let response = await fetch(url, {
+      method: 'POST',
+    });
+
+    if (response.ok) {
+      let data = await response.text();
+      console.log('Success:', data);
+      //location.reload(); // Atualiza a página inteira após a exclusão
+    } else {
+      console.error('Error:', await response.text());
+    }
+}
+
+
+  function populateTable(data) {
+    var tbody = document.getElementById('anuncio-table-body');
+    tbody.innerHTML = '';
+
+    // Cria um mapa para armazenar os IDs dos anúncios já adicionados
+    var addedAnuncioIds = {};
+
+    for (var i = 0; i < data.length; i++) {
+        // Se o ID do anúncio já foi adicionado, pular para o próximo
+        if (addedAnuncioIds[data[i].id]) {
+            continue;
+        }
+
+        var tr = document.createElement('tr');
+        
+        var fields = ['timestamp', 'valor', 'impressoes', 'landing', 'cpm', 'ctr', 'cpc', 'nome_empresa'];
+        for (var j = 0; j < fields.length; j++) {
+            var td = document.createElement('td');
+            td.textContent = data[i][fields[j]];
+            tr.appendChild(td);
+        }
+
+        // Column for "Ações"
+        var tdAcoes = document.createElement('td');
+
+        var buttonUpdate = document.createElement('button');
+        buttonUpdate.type = 'button';
+        buttonUpdate.className = 'btn btn-warning';
+        buttonUpdate.textContent = 'Atualizar';
+        buttonUpdate.setAttribute('data-id', data[i].id);
+        buttonUpdate.onclick = function () {
+            currentAnuncioId = this.getAttribute('data-id');
+            updateAnuncio();
+        };
+        tdAcoes.appendChild(buttonUpdate);
+
+        var buttonDelete = document.createElement('button');
+        buttonDelete.type = 'button';
+        buttonDelete.className = 'btn btn-danger';
+        buttonDelete.textContent = 'Deletar';
+        buttonDelete.setAttribute('data-id', data[i].id);
+        buttonDelete.onclick = function () {
+            currentAnuncioId = this.getAttribute('data-id');
+            deleteAnuncio();
+        };
+        tdAcoes.appendChild(buttonDelete);
+
+        tr.appendChild(tdAcoes);
+        tbody.appendChild(tr);
+
+        // Marcar o ID do anúncio como adicionado
+        addedAnuncioIds[data[i].id] = true;
+    }
+}
+  </script>
+
+{% endblock %}

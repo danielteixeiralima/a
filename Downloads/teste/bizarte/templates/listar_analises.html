@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lista de Análises</title>
+  <style>
+    .styled-table td {
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+  <br><br>
+  <button id="getRecentAnalysesButton">Obter Análises Recentes</button>
+  <table>
+    <thead>
+      <tr>
+        <th>Data de Criação</th>
+        <th>Análise</th>
+        <th>Nome da Empresa</th>
+        <th>Envios</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="analise-table-body" class="styled-table">
+      
+      <!-- The table will be populated by JavaScript -->
+    </tbody>
+  </table>
+  
+
+  <!-- Modal de Envio de WhatsApp -->
+  <div class="modal fade" id="whatsAppModal" tabindex="-1" role="dialog" aria-labelledby="whatsAppModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="whatsAppModalLabel">Enviar Análise por WhatsApp</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="whatsAppForm">
+            <div class="form-group">
+              <label for="clientsSelect">Clientes</label>
+              <select class="form-control" id="clientsSelect"></select>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="sendWhatsApp()">Enviar Mensagem</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Envio de Email -->
+  <div class="modal fade" id="emailModal" tabindex="-1" role="dialog" aria-labelledby="emailModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="emailModalLabel">Enviar Análise por Email</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="emailForm">
+            <div class="form-group">
+              <label for="colaboradoresSelect">Colaboradores</label>
+              <select class="form-control" id="colaboradoresSelect" multiple></select>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="sendEmail()">Enviar Email</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.fbAsyncInit = function() {
+      FB.init({
+      appId      : '293266963132123',
+      cookie     : true,
+      xfbml      : false,
+      version    : 'v17.0',
+      });
+    }
+
+    let currentAnaliseId;
+
+    document.getElementById("getRecentAnalysesButton").addEventListener("click", getRecentAnalyses);
+
+    async function getRecentAnalyses() {
+      const response = await fetch('/api/analises/recentes');
+      const recentAnalyses = await response.json();
+    
+      if (recentAnalyses.length === 0) {
+          return;
+      }
+      // Array para armazenar as promessas
+      let promises = [];
+    
+      for (const analysis of recentAnalyses) {
+          // Empurre a promessa para o array de promessas
+          promises.push(handleAnalysis(analysis));
+      }
+    
+      // Espere por todas as promessas resolverem antes de continuar
+      await Promise.all(promises);
+  }
+    
+  async function handleAnalysis(analysis) {
+      const empresaNome = analysis.nome_empresa;
+      const usersResponse = await fetch(`/api/empresa/${empresaNome}/usuarios`);
+      const users = await usersResponse.json();
+      if (users.length > 0) {
+          currentAnaliseId = analysis.id;
+          
+          document.getElementById('colaboradoresSelect').value = users[0].id;
+          sendEmailGen();
+      }
+  }
+
+    window.onload = () => {
+      getAnalises();
+      console.log(getRecentAnalyses)
+    }
+
+    document.getElementById('carregar-analises').addEventListener('click', getAnalises);
+
+    function getAnalises() {
+        fetch('/api/analises')
+            .then(response => response.json())
+            .then(data => populateTable(data));
+    }
+
+    function sendWhatsApp() {
+      var selectedUsers = Array.from(document.getElementById('clientsSelect').selectedOptions).map(option => option.value);
+      for (var i = 0; i < selectedUsers.length; i++) {
+          fetch(`/api/send_whatsapp/${currentAnaliseId}/${selectedUsers[i]}`, {method: 'POST'})
+              .then(response => {
+                  if (!response.ok) {
+                      throw Error(response.statusText);
+                  }
+                  return response.json();
+              })
+              .then(data => console.log(data))
+              .catch(error => console.log('Error: ' + error));
+      }
+  }
+
+  function sendEmail() {
+    var selectedUsers = Array.from(document.getElementById('colaboradoresSelect').selectedOptions).map(option => option.value);
+    for (var i = 0; i < selectedUsers.length; i++) {
+        fetch(`/api/send_email_gen/${currentAnaliseId}/${selectedUsers[i]}`, {method: 'POST'})
+            .then(response => {
+                if (!response.ok) {
+                    throw Error(response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => console.log(data))
+            .catch(error => console.log('Error: ' + error));
+    }
+}
+
+function sendEmailGen() {
+ 
+      fetch(`/enviar_email/${currentAnaliseId}`, {method: 'POST'})
+          .then(response => {
+              if (!response.ok) {
+                  throw Error(response.statusText);
+              }
+              return response.json();
+          })
+          .then(data => console.log(data))
+          .catch(error => console.log(error));
+  }
+
+
+    function getEmpresaIdByName(nome_empresa) {
+        return fetch(`/api/empresa/nome/${nome_empresa}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw Error(response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => data.id);
+    }
+
+    function openModalWhatsApp() {
+        // Obtemos o nome da empresa da análise atual.
+        var nome_empresa = currentAnaliseId.nome_empresa;
+        getEmpresaIdByName(nome_empresa).then(empresaId => {
+            fetch(`/api/empresa/${empresaId}/usuarios`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw Error(response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    var select = document.getElementById('clientsSelect');
+                    select.innerHTML = '';
+                    data.forEach(function(client) {
+                        var opt = document.createElement('option');
+                        opt.value = client.id;
+                        opt.innerHTML = client.nome + ' ' + client.sobrenome;
+                        select.appendChild(opt);
+                    });
+                    $('#whatsAppModal').modal('show');
+                })
+                .catch(error => console.log('Error: ' + error));
+        });
+    }
+
+    function openModalEmail() {
+      // Recuperar nome_empresa do localStorage
+      var nome_empresa = localStorage.getItem('nome_empresa');
+      console.log(nome_empresa);
+
+      fetch(`/api/empresa/${nome_empresa}/usuarios`)
+          .then(response => {
+              if (!response.ok) {
+                  throw Error(response.statusText);
+              }
+              return response.json();
+          })
+          .then(data => {
+              var select = document.getElementById('colaboradoresSelect');
+              select.innerHTML = '';
+              data.forEach(function(user) {
+                  var opt = document.createElement('option');
+                  opt.value = user.id;
+                  opt.innerHTML = user.nome + ' ' + user.sobrenome;
+                  select.appendChild(opt);
+              });
+              $('#emailModal').modal('show');
+          })
+          .catch(error => console.log('Error: ' + error));
+    }
+
+    function updateAnalise() {
+      var id = currentAnaliseId;
+      var url = '/atualizar/analise/' + id;
+  
+      // Aqui você pode pegar os dados do formulário ou de qualquer outra fonte
+      var data = {
+          data_criacao: document.querySelector('#data_criacao').value,
+          analise: document.querySelector('#analise').value,
+          id_empresa: document.querySelector('#id_empresa').value,
+          envios: document.querySelector('#envios').value
+      };
+  
+      fetch(url, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+      })
+      .then(response => response.json())
+      .then(data => {
+          console.log('Success:', data);
+          populateTable(data); // Atualiza a tabela após a atualização
+      })
+      .catch((error) => {
+          console.error('Error:', error);
+      });
+  }
+  
+  async function deleteAnalise() {
+    var id = currentAnaliseId;
+    var url = '/deletar_analise/' + id;
+
+    let response = await fetch(url, {
+      method: 'POST',
+    });
+
+    if (response.ok) {
+      let data = await response.text();
+      console.log('Success:', data);
+      //location.reload(); // Atualiza a página inteira após a exclusão
+    } else {
+      console.error('Error:', await response.text());
+    }
+  }
+  
+    function populateTable(data) {
+      var tbody = document.getElementById('analise-table-body');
+      tbody.innerHTML = '';
+  
+      for (var i = 0; i < data.length; i++) {
+          (function(i) {
+              var tr = document.createElement('tr');
+              var fields = ['data_criacao', 'analise', 'nome_empresa'];
+              for (var j = 0; j < fields.length; j++) {
+                  var td = document.createElement('td');
+                  if (fields[j] === 'analise') {
+                      td.innerHTML = data[i][fields[j]].replace(/\\n/g, '<br>');
+
+                  } else {
+                      td.textContent = data[i][fields[j]];
+                  }
+                  tr.appendChild(td);
+              }
+
+              // Column for "Envios"
+              var tdEnvios = document.createElement('td');
+
+              var buttonWhatsapp = document.createElement('button');
+              buttonWhatsapp.type = 'button';
+              buttonWhatsapp.className = 'btn btn-primary';
+              buttonWhatsapp.textContent = 'Whatsapp';
+              buttonWhatsapp.setAttribute('data-id', data[i].id);
+              buttonWhatsapp.onclick = function () {
+                  currentAnaliseId = this.getAttribute('data-id');
+                  openModalWhatsApp();
+              };
+              tdEnvios.appendChild(buttonWhatsapp);
+
+              var buttonEmail = document.createElement('button');
+              buttonEmail.type = 'button';
+              buttonEmail.className = 'btn btn-secondary';
+              buttonEmail.textContent = 'E-mail';
+              buttonEmail.setAttribute('data-toggle', 'modal');
+              buttonEmail.setAttribute('data-target', '#emailModal');
+              buttonEmail.setAttribute('data-id', data[i].id);
+              buttonEmail.onclick = function () {
+                  currentAnaliseId = this.getAttribute('data-id');
+                  localStorage.setItem('nome_empresa', data[i].nome_empresa);
+                  openModalEmail();
+              };
+              tdEnvios.appendChild(buttonEmail);
+
+              tr.appendChild(tdEnvios);
+  
+              // Column for "Ações"
+              var tdAcoes = document.createElement('td');
+
+              var buttonUpdate = document.createElement('button');
+              buttonUpdate.type = 'button';
+              buttonUpdate.className = 'btn btn-warning';
+              buttonUpdate.textContent = 'Atualizar';
+              buttonUpdate.setAttribute('data-id', data[i].id);
+              buttonUpdate.onclick = function () {
+                  currentAnaliseId = this.getAttribute('data-id');
+                  updateAnalise();
+              };
+              tdAcoes.appendChild(buttonUpdate);
+
+              var buttonDelete = document.createElement('button');
+              buttonDelete.type = 'button';
+              buttonDelete.className = 'btn btn-danger';
+              buttonDelete.textContent = 'Deletar';
+              buttonDelete.setAttribute('data-id', data[i].id);
+              buttonDelete.onclick = function () {
+                  currentAnaliseId = this.getAttribute('data-id');
+                  deleteAnalise();
+              };
+              tdAcoes.appendChild(buttonDelete);
+
+              tr.appendChild(tdAcoes);
+              tbody.appendChild(tr);
+          })(i);
+      }
+  }
+  </script>
+{% endblock %}
+
+
+
+

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Cadastrar Empresa</h1>
+    <script>
+        var empresa = JSON.parse(localStorage.getItem('empresa'));
+        
+        var empresas = [];
+        for (var i = 0; i < empresa.length; i++) {
+            empresas.push(empresa[i].name); // Adiciona o nome da empresa ao array 'lista'
+        }
+    </script>
+    <form class="form-style" action="{{ url_for('cadastrar_post') }}" method="post">
+        <div class="form-group">
+            <label for="timestamp">Timestamp:</label>
+            <input type="datetime-local" id="timestamp" name="timestamp">
+        </div>
+        <div class="form-group">
+            <label for="caption">Caption:</label>
+            <textarea id="caption" name="caption"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="like_count">Like Count:</label>
+            <input type="number" id="like_count" name="like_count">
+        </div>
+        <div class="form-group">
+            <label for="comments_count">Comments Count:</label>
+            <input type="number" id="comments_count" name="comments_count">
+        </div>
+        <div class="form-group">
+            <label for="reach">Reach:</label>
+            <input type="number" id="reach" name="reach">
+        </div>
+        <div class="form-group">
+            <label for="percentage">Percentage:</label>
+            <input type="number" step="0.01" id="percentage" name="percentage">
+        </div>
+        <div class="form-group">
+            <label for="media_product_type">Media Product Type:</label>
+            <input type="text" id="media_product_type" name="media_product_type">
+        </div>
+        <div class="form-group">
+            <label for="plays">Plays:</label>
+            <input type="number" id="plays" name="plays">
+        </div>
+        <div class="form-group">
+            <label for="saved">Saved:</label>
+            <input type="number" id="saved" name="saved">
+        </div>
+        <div class="form-group">
+            <label for="nome_empresa">Nome da Empresa:</label>
+            <textarea id="nome_empresa" name="nome_empresa"></textarea>
+        </div>
+        <div class="form-group">
+            <input type="submit" value="Cadastrar">
+        </div>
+    </form>
+
+{% endblock %}
