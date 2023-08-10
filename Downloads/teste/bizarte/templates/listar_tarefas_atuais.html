@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Empresas</h1>
+  
+
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>Nome da Tarefa</th>
+                <th>Descrição</th>
+                <th>Posição do card</th>
+                <th>Data de início</th>
+                <th>Data de conclusão</th>
+                <th>Nome da Empresa</th>
+                <th>Nome do Squad</th>
+                <th>Ações</th>
+
+            </tr>
+        </thead>
+        <tbody id="trello-table-body" class="styled-table"></tbody>
+    </table>
+
+    <script>
+
+      async function deleteTarefa(id) {
+        var url = '/deletar_tarefa/' + id;
+    
+        let response = await fetch(url, {
+            method: 'POST',
+        });
+    
+        if (response.ok) {
+            let data = await response.json();
+            console.log('Success:', data);
+            fetchTarefasAtuais(); // Atualiza a lista de tarefas após a exclusão
+        } else {
+            console.error('Error:', await response.text());
+        }
+    }
+
+      function clearBoardData() {
+        localStorage.removeItem('nomeEmpresaTrello');
+        localStorage.removeItem('asanaBoardName');
+        localStorage.removeItem('trelloListIds');
+        // e qualquer outra coisa que você queira limpar
+      }
+
+      var originalData = [];
+
+  
+
+        function filterTable() {
+          var filterValue = document.getElementById('filter').value.trim(); // Remova qualquer espaço em branco
+          var data = originalData;
+        
+          console.log("Valor do filtro:", filterValue); // Imprime o valor do filtro
+          console.log("Dados originais:", data); // Imprime os dados originais
+        
+          if (filterValue) {
+            data = data.filter(item => {
+              return item.pos === filterValue;
+            });
+          }
+        
+          console.log("Dados filtrados:", data); // Imprime os dados após o filtro
+        
+          populateTable(data);
+        }
+
+        function addData(newData) {
+          originalData = originalData.concat(newData);
+          populateTable(originalData);
+        }
+
+
+        function fetchTarefasAtuais() {
+          fetch('/get_tarefas_atuais')
+          .then(response => response.json())
+          .then(data => {
+              console.log('Tarefas recebidas:', data); // Isso deve mostrar os IDs
+              originalData = data;
+              populateTable(originalData);
+          })
+          .catch(error => {
+              console.log('Erro ao buscar tarefas:', error);
+          });
+        }
+      
+      // Chamar a função quando a página for carregada
+      fetchTarefasAtuais();
+
+        function populateTable(data) {
+          var tbody = document.getElementById('trello-table-body');
+          tbody.innerHTML = ''
+
+          for (var i = 0; i < data.length; i++) {
+            var tr = document.createElement('tr');
+
+            var tdName = document.createElement('td');
+            tdName.textContent = data[i].nome_tarefa;
+            tr.appendChild(tdName);
+
+            var tdDesc = document.createElement('td');
+            tdDesc.textContent = data[i].desc;
+            tr.appendChild(tdDesc);
+
+            var tdPos = document.createElement('td');
+            tdPos.textContent = data[i].pos;
+            tr.appendChild(tdPos);
+
+            var tdStart = document.createElement('td');
+            tdStart.textContent = data[i].start;
+            tr.appendChild(tdStart);
+
+            var tdClosed = document.createElement('td');
+            tdClosed.textContent = data[i].close;
+            tr.appendChild(tdClosed);
+
+            var tdEmpresa = document.createElement('td');
+            tdEmpresa.textContent = data[i].nome_empresa;
+            tr.appendChild(tdEmpresa);
+
+            var tdSquad = document.createElement('td');
+            tdSquad.textContent = data[i].nome_squad;
+            tr.appendChild(tdSquad);
+
+          
+
+            var tdActions = document.createElement('td');
+            var deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.setAttribute('onclick', 'deleteTarefa(' + data[i].id + ')'); // Certifique-se de que o objeto data[i] tenha o ID da tarefa
+            tdActions.appendChild(deleteButton);
+            tr.appendChild(tdActions);
+
+            tbody.appendChild(tr);
+          }
+        }
+
+        fetchOpenBoards();
+        fetchAsanaTasks();
+
+        
+
+        
+    </script>
+{% endblock %}
+
+<!-- asana:
+
+coluna1:
+1205186491478875
+
+coluna 2:
+1205186494727059
+
+coluna3:
+1205186494727060 -->

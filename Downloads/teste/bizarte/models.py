@@ -53,17 +53,18 @@ class Usuario(db.Model):
             'sobrenome': self.sobrenome,
             'email': self.email,
         }
-
+    
+    
 class OKR(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     id_empresa = db.Column(db.Integer, db.ForeignKey('empresa.id'), nullable=False)
-    empresa = db.relationship('Empresa', backref='okrs')
-    objetivo_1 = db.Column(db.String(200))
-    objetivo_2 = db.Column(db.String(200))
-    objetivo_3 = db.Column(db.String(200))
-    objetivo_4 = db.Column(db.String(200))
-    objetivo_5 = db.Column(db.String(200))
+    squad_id = db.Column(db.Integer, db.ForeignKey('squad.id'), nullable=False)  # Adicionada relação com o Squad
+    objetivo = db.Column(db.String(200))
+    data_inicio = db.Column(db.DateTime, nullable=False)
+    data_fim = db.Column(db.DateTime, nullable=False)
 
+    empresa = db.relationship('Empresa', backref='okrs')
+    squad = db.relationship('Squad', backref='okrs')  # Adicionada relação com o Squad
 
     
 class PostsInstagram(db.Model):
@@ -182,6 +183,7 @@ class Trello(db.Model):
             'close': self.close,
             'pos': self.pos,
         }
+    
 
 class Squad(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -214,12 +216,13 @@ class MacroAcao(db.Model):
     data_inclusao = db.Column(db.DateTime, default=datetime.utcnow)
     kr_id = db.Column(db.Integer, db.ForeignKey('kr.id'), nullable=False)
     objetivo = db.Column(db.String(500), nullable=False)
-    squad = db.Column(db.String(500), nullable=False)
-    squad_id = db.Column(db.Integer, nullable=False)
+    squad_id = db.Column(db.Integer, db.ForeignKey('squad.id'), nullable=False) # Novo campo
     objetivo_id = db.Column(db.Integer, nullable=False)
     empresa = db.Column(db.String(500), nullable=False)
     empresa_id = db.Column(db.Integer, nullable=False)
     kr = db.relationship('KR', backref='macro_acoes')
+    squad = db.relationship('Squad', backref='macro_acoes')
+
 
 class KR(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -232,3 +235,45 @@ class KR(db.Model):
     data_final = db.Column(db.DateTime)
     okr = db.relationship('OKR', backref='krs')
     squad = db.relationship('Squad', backref='krs') # Relacionamento com a tabela Squad
+
+
+class TarefasMetasSemanais(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    empresa = db.Column(db.String(255), nullable=False)
+    squad_name = db.Column(db.String(255), nullable=False)  # Aqui mudamos para squad_name
+    squad_id = db.Column(db.Integer, db.ForeignKey('squad.id'), nullable=False)
+    tarefa = db.Column(db.Text, nullable=False)
+    meta_semanal = db.Column(db.Text, nullable=False)
+    data_inclusao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    data_conclusao = db.Column(db.DateTime)
+    squad = db.relationship('Squad', backref='tarefas')
+
+    def _init_(self, empresa, squad_name, tarefa, meta_semanal, data_conclusao=None):
+        self.empresa = empresa
+        self.squad_name = squad_name  # Atualizado aqui também
+        self.tarefa = tarefa
+        self.meta_semanal = meta_semanal
+        self.data_conclusao = data_conclusao
+    def _repr_(self):
+        return f'<Tarefa e Meta Semanal {self.id}: {self.tarefa}>'
+    
+
+class TarefasAndamento(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    empresa = db.Column(db.String(255), nullable=False)
+    squad_name = db.Column(db.String(255), nullable=False)  # Aqui mudamos para squad_name
+    squad_id = db.Column(db.Integer, db.ForeignKey('squad.id'), nullable=False)
+    tarefa = db.Column(db.Text, nullable=False)
+    data_inclusao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    data_conclusao = db.Column(db.DateTime)
+    squad = db.relationship('Squad', backref='tarefas_atuais')
+
+class TarefasFinalizadas(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    empresa = db.Column(db.String(255), nullable=False)
+    squad_name = db.Column(db.String(255), nullable=False)  # Aqui mudamos para squad_name
+    squad_id = db.Column(db.Integer, db.ForeignKey('squad.id'), nullable=False)
+    tarefa = db.Column(db.Text, nullable=False)
+    data_inclusao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    data_conclusao = db.Column(db.DateTime)
+    squad = db.relationship('Squad', backref='tarefas_concluidas')

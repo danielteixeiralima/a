@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from models import db, Empresa, Resposta, Usuario, OKR, KR, PostsInstagram, AnaliseInstagram, Ads, Seguidores, Trello
+from models import db, Empresa, Resposta, Usuario, OKR, KR, PostsInstagram, AnaliseInstagram, Ads, Seguidores, Trello, Squad, MacroAcao, TarefasMetasSemanais, TarefasFinalizadas, TarefasAndamento
 import requests
 import json
 import time
@@ -39,6 +39,7 @@ from email.mime.text import MIMEText
 import os
 import base64
 from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
 
 
 
@@ -176,6 +177,53 @@ def cadastrar_trello():
             return jsonify({'message': 'Dados inseridos com falha!'}), 500
 
     return render_template('cadastrar_trello.html')
+
+@app.route('/get_squads', methods=['GET'])
+def get_squads():
+    nome_empresa = request.args.get('nome_empresa')
+    print(nome_empresa)
+    squads = Squad.query \
+        .join(Squad.empresa) \
+        .filter(Empresa.nome_contato == nome_empresa) \
+        .all()
+
+    result = [squad.nome_squad for squad in squads]
+    
+    return jsonify(result)
+
+@app.route('/get_okrs', methods=['GET'])
+def get_okrs():
+    nome_squad = request.args.get('nome_squad')
+    print(nome_squad)
+    okrs = OKR.query \
+        .join(OKR.squad) \
+        .filter(Squad.nome_squad == nome_squad) \
+        .all()
+
+    result = [okr.objetivo for okr in okrs]
+
+    return jsonify(result)
+
+@app.route('/get_krs', methods=['GET'])
+def get_krs():
+    nome_squad = request.args.get('nome_squad')
+    krs = KR.query.join(KR.squad).filter(Squad.nome_squad == nome_squad).all()
+    result = [kr.texto for kr in krs]
+    return jsonify(result)
+
+@app.route('/get_macro_acoes', methods=['GET'])
+def get_macro_acoes():
+    nome_squad = request.args.get('nome_squad')
+    macro_acoes = MacroAcao.query.join(MacroAcao.squad).filter(Squad.nome_squad == nome_squad).all()
+    result = [macro_acao.texto for macro_acao in macro_acoes]
+    return jsonify(result)
+
+@app.route('/get_tarefas_metas_semanais', methods=['GET'])
+def get_tarefas_metas_semanais():
+    nome_squad = request.args.get('nome_squad')
+    tarefas_metas_semanais = TarefasMetasSemanais.query.join(TarefasMetasSemanais.squad).filter(Squad.nome_squad == nome_squad).all()
+    result = [item.tarefa for item in tarefas_metas_semanais]
+    return jsonify(result)
 
 @app.route('/cadastrar/post', methods=['POST'])
 def cadastrar_post():
@@ -534,9 +582,25 @@ def atualizar_analise(id):
 @app.route('/deletar_analise/<int:id>', methods=['POST'])
 def deletar_analise(id):
     analise = AnaliseInstagram.query.get_or_404(id)
+    print(id)
     db.session.delete(analise)
     db.session.commit()
     return redirect(url_for('visualizar_analises'))
+
+@app.route('/deletar_tarefa/<int:id>', methods=['POST'])
+def deletar_tarefa(id):
+    tarefa = TarefasAndamento.query.get_or_404(id)
+    db.session.delete(tarefa)
+    db.session.commit()
+    return jsonify(success=True)
+
+@app.route('/deletar_tarefa_concluida/<int:id>', methods=['POST'])
+def deletar_tarefa_concluida(id):
+    tarefa = TarefasFinalizadas.query.get_or_404(id)
+    db.session.delete(tarefa)
+    db.session.commit()
+    return jsonify(success=True)
+
 
 @app.route('/deletar_post/<id>', methods=['POST'])
 def deletar_post(id):
@@ -1076,6 +1140,17 @@ def listar_trello():
     trello = Trello.query.all()  # Usando a classe Trello em vez de KR
     return render_template('listar_trello.html', trello=trello)
 
+@app.route('/listar/tarefas_atuais', methods=['GET'])
+def listar_tarefas_atuais():
+    tarefas_atuais = TarefasAndamento.query.all()  # Usando a classe Trello em vez de KR
+    return render_template('listar_tarefas_atuais.html', tarefas_atuais=tarefas_atuais)
+
+@app.route('/listar/tarefas_concluidas', methods=['GET'])
+def listar_tarefas_concluidas():
+    tarefas_concluidas = TarefasFinalizadas.query.all()  # Usando a classe Trello em vez de KR
+    return render_template('listar_tarefas_concluidas.html', tarefas_concluidas=tarefas_concluidas)
+
+
 @app.route('/cadastrar/kr', methods=['GET', 'POST'])
 def cadastrar_kr():
     if request.method == 'POST':
@@ -1089,7 +1164,118 @@ def cadastrar_kr():
     empresas = Empresa.query.all()
     return render_template('cadastrar_kr.html', empresas=empresas)
 
+@app.route('/get_squad_id', methods=['GET'])
+def get_squad_id():
+    try:
+        squad_name = request.args.get('squad_name')
+        squad = Squad.query.filter_by(nome_squad=squad_name).first()
+        if not squad:
+            return jsonify(success=False, error="Squad não encontrado")
+        return jsonify(success=True, squad_id=squad.id)
+    except Exception as e:
+        return jsonify(success=False, error=str(e))
 
+@app.route('/cadastrar_tarefas_atuais', methods=['POST'])
+def cadastrar_tarefas_atuais():
+    try:
+        tarefas_data = request.json['tarefas']
+        for tarefa_data in tarefas_data:
+            
+            # Obter a empresa pelo nome_contato (ou o campo correto que representa o nome da empresa)
+            empresa = Empresa.query.filter_by(nome_contato=tarefa_data['empresa']).first()
+            if not empresa:
+                return jsonify(success=False, error="Empresa não encontrada")
+
+            # Obter o squad pelo ID
+            squad = Squad.query.filter_by(id=tarefa_data['squad_id'], empresa_id=empresa.id).first()
+            if not squad:
+                return jsonify(success=False, error="Squad não encontrado")
+
+            # Criar a tarefa
+            tarefa = TarefasAndamento(
+                empresa=tarefa_data['empresa'],
+                squad_name=tarefa_data['squad_name'], # Se 'squad_name' deve ser usado, ajuste a lógica conforme necessário
+                squad_id=squad.id,
+                tarefa=tarefa_data['tarefa'], # Isso parece ser uma data, ajuste conforme necessário
+                data_inclusao=datetime.utcnow()
+            )
+            db.session.add(tarefa)
+        db.session.commit()
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, error=str(e))
+    
+@app.route('/cadastrar_tarefas_concluidas', methods=['POST'])
+def cadastrar_tarefas_concluidas():
+    try:
+        tarefas_data = request.json['tarefas']
+        for tarefa_data in tarefas_data:
+
+            # Obter a empresa pelo nome_contato (ou o campo correto que representa o nome da empresa)
+            empresa = Empresa.query.filter_by(nome_contato=tarefa_data['empresa']).first()
+            if not empresa:
+                return jsonify(success=False, error="Empresa não encontrada")
+
+            # Obter o squad pelo ID
+            squad = Squad.query.filter_by(id=tarefa_data['squad_id'], empresa_id=empresa.id).first()
+            if not squad:
+                return jsonify(success=False, error="Squad não encontrado")
+
+            # Criar a tarefa
+            tarefa = TarefasFinalizadas(
+                empresa=tarefa_data['empresa'],
+                squad_name=tarefa_data['squad_name'],
+                squad_id=squad.id,
+                tarefa=tarefa_data['tarefa'],
+                data_conclusao=datetime.utcnow() # Ajuste este campo conforme necessário
+            )
+            db.session.add(tarefa)
+        db.session.commit()
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, error=str(e))
+    
+@app.route('/get_tarefas_atuais', methods=['GET'])
+def get_tarefas_atuais():
+    try:
+        tarefas = TarefasAndamento.query.all()
+        result = []
+        for tarefa in tarefas:
+            result.append({
+                'id': tarefa.id,  # Inclua o ID da tarefa aqui
+                'nome_tarefa': tarefa.tarefa,
+                'desc': tarefa.descricao_empresa if hasattr(tarefa, 'descricao_empresa') else '',
+                'pos': tarefa.squad_name,
+                'start': tarefa.data_inclusao.strftime('%Y-%m-%d'),
+                'close': tarefa.data_conclusao.strftime('%Y-%m-%d') if tarefa.data_conclusao else '',
+                'nome_empresa': tarefa.empresa,
+                'nome_squad': tarefa.squad_name,
+                'plataforma': '' # Adicione o campo de plataforma se necessário
+            })
+        return jsonify(result)
+    except Exception as e:
+        return jsonify(error=str(e))
+
+@app.route('/get_tarefas_concluidas', methods=['GET'])
+def get_tarefas_concluidas():
+    try:
+        tarefas = TarefasFinalizadas.query.all()
+        result = []
+        for tarefa in tarefas:
+            result.append({
+                'id': tarefa.id,  # Inclua o ID da tarefa aqui
+                'nome_tarefa': tarefa.tarefa,
+                'desc': tarefa.descricao_empresa if hasattr(tarefa, 'descricao_empresa') else '',
+                'pos': tarefa.squad_name,
+                'start': tarefa.data_inclusao.strftime('%Y-%m-%d') if hasattr(tarefa, 'data_inclusao') else '', # Ajuste se necessário
+                'close': tarefa.data_conclusao.strftime('%Y-%m-%d') if tarefa.data_conclusao else '',
+                'nome_empresa': tarefa.empresa,
+                'nome_squad': tarefa.squad_name,
+                'plataforma': '' # Adicione o campo de plataforma se necessário
+            })
+        return jsonify(result)
+    except Exception as e:
+        return jsonify(error=str(e))
 
 @app.route('/atualizar/kr/<int:id>', methods=['GET', 'POST'])
 def atualizar_kr(id):

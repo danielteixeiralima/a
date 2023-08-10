@@ -4,39 +4,54 @@
     <h1>Cadastrar Empresa</h1>
 
     <div class="grid-container">
-        <div class="grid-item">
-            <h2>Trello</h2>
-            <form>
-                <div class="form-group">
-                    <label for="nome_empresa_asana">Nome da empresa:</label>
-                    <select id="nome_empresa_asana" name="nome_empresa_asana" onchange="updateSquadOptions()">
-                        <option value="Colégio Mopi">Colégio Mopi</option>
-                        <option value="Portal ES360">Portal ES360</option>
-                    </select>
-                </div>
-              <div class="form-group">
+      <div class="grid-item">
+        <h2>Trello</h2>
+        <form>
+            <div class="form-group">
+                <label for="nome_empresa_trello">Nome da empresa:</label>
+                <select id="nome_empresa_trello" name="nome_empresa_trello" onchange="updateSquadOptionsTrello()">
+                    <option value="Portal ES360">Portal ES360</option>
+                    <option value="Espaço Pontal">Espaço Pontal</option>
+
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="nome_squad_trello">Nome do Squad:</label>
+                
+                <select id="nome_squad_trello" name="nome_squad_trello">
+                  <!-- As opções serão preenchidas dinamicamente -->
+              </select>
+            </div>
+            <div class="form-group">
                 <label for="nome_tarefa_trello">Nome da tarefa:</label>
                 <input type="text" id="nome_tarefa_trello" name="nome_tarefa_trello">
-              </div>
-              
-              <input type="button" name="trello" onclick="createTrelloCard(document.getElementById('nome_tarefa_trello').value)" value="Enviar">
-              <input type="submit" id="createBoardButtonTrello" name="trelloBoard" value="Criar Board" onclick="criarBoardTrello(event, 'Squad Farinelli')">
+            </div>
+    
+            <input type="button" name="trello" onclick="createTrelloCard(document.getElementById('nome_tarefa_trello').value)" value="Enviar">
+              <input type="submit" id="createBoardButtonTrello" name="trelloBoard" value="Criar Board" onclick="criarBoardTrello(event)">  
+             <!-- <input type="submit" id="createBoardButtonTrello" name="trelloBoard" value="Criar Board" onclick="deleteAllProjectsInWorkspace()">  -->
 
-            </form>
-          </div>
-
+        </form>
+    </div>
 
           <div class="grid-item">
             <h2>Asana</h2>
             <form>
                 <div class="form-group">
                     <label for="nome_empresa_asana">Nome da empresa:</label>
-                    <select id="nome_empresa_asana" name="nome_empresa_asana" onchange="updateSquadOptions()">
+                    <select id="nome_empresa_asana" name="nome_empresa_asana" onchange="updateSquadOptionsAsana()">
+                      <option value="Pontal">Pontal</option>
+                        
                         <option value="Colégio Mopi">Colégio Mopi</option>
-                       
+                        <option value="Espaço Pontal">Espaço Pontal</option>
                     </select>
                 </div>
-               
+                  <div class="form-group">
+                    <label for="nome_squad_asana">Nome do squad:</label>
+                    <select id="nome_squad_asana" name="nome_squad_asana" onchange="updateOKROptions()">
+                        <!-- As opções serão preenchidas dinamicamente -->
+                    </select>
+                </div>
                 <div class="form-group">
                     <label for="nome_tarefa_asana">Nome da tarefa:</label>
                     <input type="text" id="nome_tarefa_asana" name="nome_tarefa_asana">
@@ -51,9 +66,8 @@
             <h2>Monday</h2>
             <form>
                 <div class="form-group">
-                    <label for="nome_empresa_asana">Nome da empresa:</label>
-                    <select id="nome_empresa_asana" name="nome_empresa_asana" onchange="updateSquadOptions()">
-                        <option value="Colégio Mopi">Reflora</option>
+                    <label for="nome_empresa_monday">Nome da empresa:</label>
+                    <select id="nome_empresa_monday" name="nome_empresa_monday" onchange="updateSquadOptions()">
                       
                     </select>
                 </div>
@@ -72,7 +86,6 @@
                 <div class="form-group">
                     <label for="nome_empresa_asana">Nome da empresa:</label>
                     <select id="nome_empresa_asana" name="nome_empresa_asana" onchange="updateSquadOptions()">
-                        <option value="Colégio Mopi">TRC</option>
                         
                     </select>
                 </div>
@@ -135,37 +148,55 @@
             }
           }
 
-        function criarBoardTrello(event, boardName) {
+          function criarBoardTrello(event) {
             event.preventDefault(); // Isso evitará que a página seja atualizada
-          
-            const url = `https://api.trello.com/1/boards/?name=${boardName}&key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E`;
-          
+        
+            const nomeSquadSelect = document.getElementById('nome_squad_trello').value;
+            const nomeEmpresaTrello = document.getElementById('nome_empresa_trello').value
+            localStorage.setItem('nomeEmpresaTrello', nomeEmpresaTrello);
+            const plataforma = "Trello"
+
+
+        
+            const url = `https://api.trello.com/1/boards/?name=${nomeSquadSelect}&key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E`
             fetch(url, {
-              method: 'POST'
+                method: 'POST'
             })
             .then(response => response.json())
             .then(data => {
-              console.log('Board criado com sucesso:', data);
-              const boardId = data.id;
-          
-              // Armazenar o ID do quadro no localStorage
-              localStorage.setItem('boardId', boardId);
-          
-              // Chamar a função para excluir todas as listas do quadro
-              deleteAllListsFromBoard(boardId)
-              .then(() => {
-                // Chamar a função para criar as seções (listas) no quadro
-                criarSecoesTrello(boardId);
-              });
+                console.log('Board criado com sucesso:', data);
+                const boardId = data.id;
+        
+                // Armazenar o ID do quadro no localStorage
+                localStorage.setItem('boardId', boardId);
+                localStorage.setItem('asanaBoardName', nomeSquadSelect); 
+                localStorage.setItem('plataformaTrello', plataforma);
+                // Armazenando o nome do board no localStorage
+
+        
+                // Chamar a função para excluir todas as listas do quadro
+                deleteAllListsFromBoard(boardId)
+                .then(() => {
+                    // Chamar a função para criar as seções (listas) no quadro
+                    criarSecoesTrello(boardId)
+                    .then(() => {
+                        // Chamar a função para criar OKRs no quadro
+                        createOKRTasksTrello();
+                        createKRTasksTrello();
+                        createMacroActionsTasksTrello();
+                        createTarefasMetasSemanaisTasksTrello();
+                    });
+                });
             })
             .catch(error => {
-              console.error('Erro ao criar o board:', error);
+                console.error('Erro ao criar o board:', error);
             });
-          }
+        }
           
 
 
           async function deleteAllListsFromBoard(boardId) {
+
             // URL para obter todas as listas do quadro
             const getListsUrl = `https://api.trello.com/1/boards/${boardId}/lists?key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E`;
           
@@ -239,7 +270,13 @@
 
           async function criarBoardAsana(event) {
             event.preventDefault();
-            const boardName = "Squad Colégio Mopi"; // Nome do board
+            const nomeSquadSelect = document.getElementById('nome_squad_asana').value
+            const nomeEmpresaAsana = document.getElementById('nome_empresa_asana').value
+            localStorage.setItem('nomeEmpresaAsana', nomeEmpresaAsana);
+            const plataforma = "Asana"
+
+
+            const boardName = nomeSquadSelect; // Nome do board
             var url = "https://app.asana.com/api/1.0/projects";
             var data = {
               "data": {
@@ -263,13 +300,16 @@
               var projectID = responseData.data.gid;
           
               localStorage.setItem('projectID', JSON.stringify(projectID));
-              localStorage.setItem('asanaBoardName', boardName); // Armazenando o nome do board no localStorage
+              localStorage.setItem('asanaBoardName', boardName);
+              localStorage.setItem('plataformaAsana', plataforma);  // Armazenando o nome do board no localStorage
           
-              alert("Board criado com sucesso! ID: " + projectID);
           
               // Chamar a função para criar as seções, passando o ID do projeto
               await criarSecoes(projectID);
-          
+              await createOKRTasks()
+              await createKRTasks();
+              await createMacroAcaoTasks();
+              await createTarefasMetasSemanaisTasksAsana();
               // Obter todas as seções
               const sections = await getSections(projectID);
           
@@ -445,6 +485,683 @@
 
             createTask(event, projectID);
           });
+
+          async function updateSquadOptionsTrello() {
+            const nomeEmpresa = document.getElementById('nome_empresa_trello').value;
+            const nomeSquadSelect = document.getElementById('nome_squad_trello');
+            
+            // Limpa as opções existentes
+            nomeSquadSelect.innerHTML = '';
+        
+            const squads = await getSquadsAsana(nomeEmpresa);
+            for (const squad of squads) {
+                const option = document.createElement('option');
+                option.value = squad; // Considerando que o resultado é uma lista de strings com os nomes dos squads
+                option.textContent = squad;
+                nomeSquadSelect.appendChild(option);
+            }
+        }
+
+
+            async function updateSquadOptionsAsana() {
+              const nomeEmpresa = document.getElementById('nome_empresa_asana').value;
+              const nomeSquadSelect = document.getElementById('nome_squad_asana');
+              
+              // Limpa as opções existentes
+              nomeSquadSelect.innerHTML = '';
+          
+              const squads = await getSquadsAsana(nomeEmpresa);
+              for (const squad of squads) {
+                  const option = document.createElement('option');
+                  option.value = squad; // Considerando que o resultado é uma lista de strings com os nomes dos squads
+                  option.textContent = squad;
+                  nomeSquadSelect.appendChild(option);
+              }
+          }
+          
+
+            async function getSquadsAsana(nomeEmpresa) {
+              try {
+                const response = await fetch(`/get_squads?nome_empresa=${nomeEmpresa}`);
+                if (response.ok) {
+                  console.log(response)
+                  return await response.json();
+                } else {
+                  console.error('Erro ao obter squads:', response.statusText);
+                  return [];
+                }
+              } catch (error) {
+                console.error('Exceção ao obter squads:', error);
+                return [];
+              }
+            }
+
+            async function updateOKROptions() {
+              const nomeSquad = document.getElementById('nome_squad_asana').value;
+             
+          
+              const okrs = await getOKRs(nomeSquad);
+              console.log(okrs)
+              
+          }
+          
+          async function createOKRTasksTrello() {
+            const nomeSquad = document.getElementById('nome_squad_trello').value; // Certifique-se de que este ID esteja correto
+            const okrs = await getOKRs(nomeSquad);
+            const boardId = localStorage.getItem('boardId');
+            if (!boardId) {
+                console.error("ID do quadro não encontrado no localStorage");
+                return;
+            }
+        
+            // URL para obter todas as listas do quadro
+            const getListsUrl = `https://api.trello.com/1/boards/${boardId}/lists?key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E`;
+        
+            try {
+                // Obter todas as listas do quadro
+                const response = await fetch(getListsUrl);
+                const lists = await response.json();
+        
+                // Encontrar a lista com o nome "Objetivo" (ou qualquer outro nome que você deseja usar para OKRs)
+                const targetList = lists.find(list => list.name === "Objetivo");
+        
+                if (!targetList) {
+                    console.error("Lista 'Objetivo' não encontrada");
+                    return;
+                }
+        
+                for (const objetivo of okrs) {
+                    // URL para criar um cartão na lista encontrada
+                    const createCardUrl = `https://api.trello.com/1/cards?idList=${targetList.id}&key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E&name=${objetivo}`;
+        
+                    // Criar o cartão
+                    await fetch(createCardUrl, { method: 'POST' });
+                    console.log(`OKR '${objetivo}' criado com sucesso na lista 'Objetivo'`);
+                }
+            } catch (error) {
+                console.error("Erro ao criar OKRs no Trello:", error);
+            }
+        }
+
+
+
+
+
+        async function deleteAllProjectsInWorkspace() {
+          event.preventDefault(); // Isso evitará que a página seja atualizada
+
+          const workspaceId = '2028133077413';
+          const url = `https://app.asana.com/api/1.0/workspaces/${workspaceId}/projects`;
+      
+          try {
+              // Obter todos os projetos no espaço de trabalho
+              const response = await fetch(url, {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                  }
+              });
+      
+              if (response.ok) {
+                  const projects = await response.json();
+                  
+                  // Laço para deletar cada projeto
+                  for (const project of projects.data) {
+                      await deleteAsanaProject(project.gid);
+                  }
+      
+                  console.log('Todos os projetos no espaço de trabalho foram excluídos com sucesso');
+              } else {
+                  console.error('Erro ao obter projetos:', response.statusText);
+              }
+          } catch (error) {
+              console.error('Exceção ao obter projetos:', error);
+          }
+      }
+      
+      async function deleteAsanaProject(projectID) {
+        const url = `https://app.asana.com/api/1.0/projects/${projectID}`;
+    
+        try {
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                }
+            });
+    
+            const responseData = await response.json();
+    
+            if (response.ok) {
+                console.log(`Projeto com ID ${projectID} excluído com sucesso`, responseData);
+            } else {
+                console.error(`Erro ao excluir o projeto com ID ${projectID}:`, responseData);
+            }
+        } catch (error) {
+            console.error(`Exceção ao excluir o projeto com ID ${projectID}:`, error);
+        }
+    }
+
+
+
+          async function createOKRTasks() {
+            const nomeSquad = document.getElementById('nome_squad_asana').value;
+            const okrs = await getOKRs(nomeSquad);
+            const projectID = JSON.parse(localStorage.getItem('projectID'));
+        
+            // Obter todas as seções usando a função já existente
+            const sections = await getSections(projectID);
+            
+            // Encontrar a seção com o nome "Objetivo"
+            const targetSection = sections.find(section => section.name === "Objetivo");
+        
+            if (!targetSection) {
+                console.error("Seção 'Objetivo' não encontrada");
+                return;
+            }
+        
+            for (const objetivo of okrs) {
+                // URL para adicionar uma tarefa
+                var url = "https://app.asana.com/api/1.0/tasks";
+        
+                // Dados para a nova tarefa
+                var data = {
+                    "data": {
+                        "name": objetivo,
+                        "projects": [projectID]
+                    }
+                };
+        
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                        },
+                        body: JSON.stringify(data)
+                    });
+        
+                    const responseData = await response.json();
+        
+                    if (responseData.data && responseData.data.gid) {
+                        // Mover a tarefa para a seção desejada
+                        const taskID = responseData.data.gid;
+                        const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
+                        const moveData = {
+                            "data": {
+                                "task": taskID
+                            }
+                        };
+        
+                        await fetch(moveUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                            },
+                            body: JSON.stringify(moveData)
+                        });
+        
+                        console.log("OKR '" + objetivo + "' criado com sucesso na seção 'Objetivo'");
+                    } else {
+                        console.error("Falha ao criar OKR. Resposta da API:", responseData);
+                    }
+                } catch (error) {
+                    console.error("Erro ao criar OKR:", error);
+                }
+            }
+        }
+
+
+          async function getOKRs(nomeSquad) {
+              try {
+                  const response = await fetch(`/get_okrs?nome_squad=${nomeSquad}`);
+                  if (response.ok) {
+                      return await response.json();
+                  } else {
+                      console.error('Erro ao obter OKRs:', response.statusText);
+                      return [];
+                  }
+              } catch (error) {
+                  console.error('Exceção ao obter OKRs:', error);
+                  return [];
+              }
+          }
+
+
+
+          async function createKRTasksTrello() {
+            const nomeSquad = document.getElementById('nome_squad_trello').value;
+            const krs = await getKRs(nomeSquad);
+            const boardId = localStorage.getItem('boardId');
+        
+            if (!boardId) {
+                console.error("ID do quadro não encontrado no localStorage");
+                return;
+            }
+        
+            // URL para obter todas as listas do quadro
+            const getListsUrl = `https://api.trello.com/1/boards/${boardId}/lists?key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E`;
+        
+            const response = await fetch(getListsUrl);
+            const lists = await response.json();
+        
+            // Encontrar a lista com o nome "KR"
+            const targetList = lists.find(list => list.name === "KR");
+        
+            if (!targetList) {
+                console.error("Lista 'KR' não encontrada");
+                return;
+            }
+        
+            for (const kr of krs) {
+                const createCardUrl = `https://api.trello.com/1/cards?idList=${targetList.id}&key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E&name=${kr}`;
+        
+                try {
+                    // Criar o cartão
+                    await fetch(createCardUrl, { method: 'POST' });
+                    console.log(`KR '${kr}' criado com sucesso na lista 'KR'`);
+                } catch (error) {
+                    console.error("Erro ao criar o cartão KR:", error);
+                }
+                console.log('Todos os KRS foram criados');
+
+            }
+        }
+        
+        async function getKRs(nomeSquad) {
+            try {
+                const response = await fetch(`/get_krs?nome_squad=${nomeSquad}`);
+                if (response.ok) {
+                    return await response.json();
+                } else {
+                    console.error('Erro ao obter KRs:', response.statusText);
+                    return [];
+                }
+            } catch (error) {
+                console.error('Exceção ao obter KRs:', error);
+                return [];
+            }
+        }
+
+
+
+        function fetchOpenBoardsForMacroActions() {
+          fetch('https://api.trello.com/1/members/me/boards?key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E')
+            .then(response => response.json())
+            .then(boards => {
+              const openBoards = boards.filter(board => !board.closed);
+              openBoards.forEach(board => {
+                localStorage.setItem('boardId', board.id); // Set the boardId in localStorage
+                createMacroActionsTasksTrello();
+              });
+            })
+            .catch(err => console.error(err));
+        }
+        
+    async function createMacroActionsTasksTrello() {
+      const nomeSquad = document.getElementById('nome_squad_trello').value;
+      const macroacoes = await getMacroacoes(nomeSquad);
+      console.log(macroacoes)
+      const boardId = localStorage.getItem('boardId');
+
+      if (!boardId) {
+          console.error("ID do quadro não encontrado no localStorage");
+          return;
+      }
+
+      // URL to get all lists of the board
+      const getListsUrl = `https://api.trello.com/1/boards/${boardId}/lists?key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E`;
+
+      const response = await fetch(getListsUrl);
+      const lists = await response.json();
+
+      // Find the list with the name "Macro Ações"
+      const targetList = lists.find(list => list.name === "Macro Ações");
+
+      if (!targetList) {
+          console.error("Lista 'Macro Ações' não encontrada");
+          return;
+      }
+
+      for (const macroacao of macroacoes) {
+          const createCardUrl = `https://api.trello.com/1/cards?idList=${targetList.id}&key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E&name=${macroacao}`;
+
+          try {
+              // Create the card
+              await fetch(createCardUrl, { method: 'POST' });
+              console.log(`Macroação '${macroacao}' criada com sucesso na lista 'Macro Ações'`);
+          } catch (error) {
+              console.error("Erro ao criar o cartão Macro Ação:", error);
+          }
+      }
+    }
+          
+          async function getMacroacoes(nomeSquad) {
+              try {
+                  const response = await fetch(`/get_macro_acoes?nome_squad=${nomeSquad}`);
+                  console.log(response)
+                  if (response.ok) {
+                      return await response.json();
+                  } else {
+                      console.error('Erro ao obter Macroações:', response.statusText);
+                      return [];
+                  }
+              } catch (error) {
+                  console.error('Exceção ao obter Macroações:', error);
+                  return [];
+              }
+          }
+        
+          async function createTarefasMetasSemanaisTasksTrello() {
+            const nomeSquad = document.getElementById('nome_squad_trello').value;
+            const tarefasMetasSemanais = await getTarefasMetasSemanais(nomeSquad);
+            const boardId = localStorage.getItem('boardId');
+        
+            if (!boardId) {
+                console.error("ID do quadro não encontrado no localStorage");
+                return;
+            }
+        
+            const getListsUrl = `https://api.trello.com/1/boards/${boardId}/lists?key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E`;
+        
+            const response = await fetch(getListsUrl);
+            const lists = await response.json();
+        
+            const targetList = lists.find(list => list.name === "Meta semanal e Tarefas");
+        
+            if (!targetList) {
+                console.error("Lista 'Meta semanal e Tarefas' não encontrada");
+                return;
+            }
+        
+            for (const item of tarefasMetasSemanais) {
+                const createCardUrl = `https://api.trello.com/1/cards?idList=${targetList.id}&key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E&name=${encodeURIComponent(item)}&desc=`;
+        
+                try {
+                    await fetch(createCardUrl, { method: 'POST' });
+                    console.log(`Tarefa '${item}' criada com sucesso na lista 'Meta semanal e Tarefas'`);
+                } catch (error) {
+                    console.error("Erro ao criar o cartão Tarefa:", error);
+                }
+            }
+        }
+        
+        async function getTarefasMetasSemanais(nomeSquad) {
+            try {
+                const response = await fetch(`/get_tarefas_metas_semanais?nome_squad=${nomeSquad}`);
+                if (response.ok) {
+                    return await response.json();
+                } else {
+                    console.error('Erro ao obter Tarefas e Metas Semanais:', response.statusText);
+                    return [];
+                }
+            } catch (error) {
+                console.error('Exceção ao obter Tarefas e Metas Semanais:', error);
+                return [];
+            }
+        }
+        
+        
+        
+        
+        
+        
+
+
+        
+
+
+          async function createKRTasks() {
+            const nomeSquad = document.getElementById('nome_squad_asana').value;
+            const krs = await getKRs(nomeSquad);
+            const projectID = JSON.parse(localStorage.getItem('projectID'));
+        
+            // Obter todas as seções usando a função já existente
+            const sections = await getSections(projectID);
+            
+            // Encontrar a seção com o nome "KR"
+            const targetSection = sections.find(section => section.name === "KR");
+        
+            if (!targetSection) {
+                console.error("Seção 'KR' não encontrada");
+                return;
+            }
+        
+            for (const texto of krs) {
+                // URL para adicionar uma tarefa
+                var url = "https://app.asana.com/api/1.0/tasks";
+        
+                // Dados para a nova tarefa
+                var data = {
+                    "data": {
+                        "name": texto,
+                        "projects": [projectID]
+                    }
+                };
+        
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                        },
+                        body: JSON.stringify(data)
+                    });
+        
+                    const responseData = await response.json();
+        
+                    if (responseData.data && responseData.data.gid) {
+                        // Mover a tarefa para a seção desejada
+                        const taskID = responseData.data.gid;
+                        const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
+                        const moveData = {
+                            "data": {
+                                "task": taskID
+                            }
+                        };
+        
+                        await fetch(moveUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                            },
+                            body: JSON.stringify(moveData)
+                        });
+        
+                        console.log("KR '" + texto + "' criado com sucesso na seção 'KR'");
+                    } else {
+                        console.error("Falha ao criar KR. Resposta da API:", responseData);
+                    }
+                } catch (error) {
+                    console.error("Erro ao criar KR:", error);
+                }
+            }
+        }
+        
+        async function getKRs(nomeSquad) {
+            try {
+                const response = await fetch(`/get_krs?nome_squad=${nomeSquad}`);
+                if (response.ok) {
+                    return await response.json();
+                } else {
+                    console.error('Erro ao obter KRs:', response.statusText);
+                    return [];
+                }
+            } catch (error) {
+                console.error('Exceção ao obter KRs:', error);
+                return [];
+            }
+        }
+
+        async function createMacroAcaoTasks() {
+          const nomeSquad = document.getElementById('nome_squad_asana').value;
+          const macroAcoes = await getMacroAcoesAsana(nomeSquad);
+          const projectID = JSON.parse(localStorage.getItem('projectID'));
+      
+          // Obter todas as seções usando a função já existente
+          const sections = await getSections(projectID);
+          
+          // Encontrar a seção com o nome "MacroAcoes"
+          const targetSection = sections.find(section => section.name === "Macro Ações");
+      
+          if (!targetSection) {
+              console.error("Seção 'MacroAcoes' não encontrada");
+              return;
+          }
+      
+          for (const texto of macroAcoes) {
+              var url = "https://app.asana.com/api/1.0/tasks";
+              var data = {
+                  "data": {
+                      "name": texto,
+                      "projects": [projectID]
+                  }
+              };
+      
+              try {
+                  const response = await fetch(url, {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                      },
+                      body: JSON.stringify(data)
+                  });
+      
+                  const responseData = await response.json();
+      
+                  if (responseData.data && responseData.data.gid) {
+                      const taskID = responseData.data.gid;
+                      const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
+                      const moveData = {
+                          "data": {
+                              "task": taskID
+                          }
+                      };
+      
+                      await fetch(moveUrl, {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                          },
+                          body: JSON.stringify(moveData)
+                      });
+      
+                      console.log("MacroAcao '" + texto + "' criado com sucesso na seção 'MacroAcoes'");
+                  } else {
+                      console.error("Falha ao criar MacroAcao. Resposta da API:", responseData);
+                  }
+              } catch (error) {
+                  console.error("Erro ao criar MacroAcao:", error);
+              }
+          }
+      }
+      
+      async function getMacroAcoesAsana(nomeSquad) {
+          try {
+              const response = await fetch(`/get_macro_acoes?nome_squad=${nomeSquad}`);
+              if (response.ok) {
+                  return await response.json();
+              } else {
+                  console.error('Erro ao obter MacroAcoes:', response.statusText);
+                  return [];
+              }
+          } catch (error) {
+              console.error('Exceção ao obter MacroAcoes:', error);
+              return [];
+          }
+      }
+
+      async function createTarefasMetasSemanaisTasksAsana() {
+        const nomeSquad = document.getElementById('nome_squad_asana').value;
+        const tarefasMetasSemanais = await getTarefasMetasSemanais(nomeSquad);
+        const projectID = JSON.parse(localStorage.getItem('projectID'));
+    
+        // Obter todas as seções usando a função já existente
+        const sections = await getSections(projectID);
+    
+        // Encontrar a seção com o nome "Meta semanal e Tarefas"
+        const targetSection = sections.find(section => section.name === "Meta semanal e Tarefas");
+    
+        if (!targetSection) {
+            console.error("Seção 'Meta semanal e Tarefas' não encontrada");
+            return;
+        }
+    
+        for (const tarefa of tarefasMetasSemanais) {
+          console.log("Tarefa atual:", tarefa); // Log aqui
+
+          var url = "https://app.asana.com/api/1.0/tasks";
+          var data = {
+              "data": {
+                  "name": tarefa,
+                  "projects": [projectID]
+              }
+          };
+    
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
+                      },
+                    body: JSON.stringify(data)
+                });
+    
+                const responseData = await response.json();
+    
+                if (responseData.data && responseData.data.gid) {
+                    const taskID = responseData.data.gid;
+                    const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
+                    const moveData = {
+                        "data": {
+                            "task": taskID
+                        }
+                    };
+    
+                    await fetch(moveUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
+                          },
+                        body: JSON.stringify(moveData)
+                    });
+    
+                } else {
+                    console.error("Falha ao criar Tarefa e Meta Semanal. Resposta da API:", responseData);
+                }
+            } catch (error) {
+                console.error("Erro ao criar Tarefa e Meta Semanal:", error);
+            }
+        }
+    }
+    
+    async function getTarefasMetasSemanais(nomeSquad) {
+      try {
+          const response = await fetch(`/get_tarefas_metas_semanais?nome_squad=${nomeSquad}`);
+          const result = await response.json();
+          console.log("Resposta da API:", result); // Log aqui
+          return result;
+      } catch (error) {
+          console.error('Exceção ao obter Tarefas e Metas Semanais:', error);
+          return [];
+      }
+  }
+
+
+        
+
+
+        
+
+       
 
 
     </script>

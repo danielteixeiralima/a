@@ -3,6 +3,19 @@
 {% block content %}
     <h1>Empresas</h1>
     <a class="btn" href="{{ url_for('cadastrar_trello') }}">Cadastrar Tarefas</a>
+    
+    <label for="filter">Filtrar por posição:</label>
+<select id="filter" onchange="filterTable()">
+  <option value=""></option>
+  <option value="Objetivo">Objetivo</option>
+  <option value="KR">KR</option>
+  <option value="Macro Ações">Macro Ações</option>
+  <option value="Meta semanal e Tarefas">Meta semanal e Tarefas</option>
+  <option value="Tarefas em andamento">Tarefas em andamento</option>
+  <option value="Tarefas concluídas">Tarefas concluídas</option>
+</select><br>
+<a id="cadastrarBtn" class="btn" onclick="cadastrarTarefasAtuais()">Cadastrar no banco de dados</a>
+
     <table class="styled-table">
         <thead>
             <tr>
@@ -11,7 +24,10 @@
                 <th>Posição do card</th>
                 <th>Data de início</th>
                 <th>Data de conclusão</th>
-                <th>Nome da empresa</th>
+                <th>Nome da Empresa</th>
+                <th>Nome do Squad</th>
+                <th>Plataforma</th>
+
             </tr>
         </thead>
         <tbody id="trello-table-body" class="styled-table"></tbody>
@@ -20,18 +36,96 @@
     <script>
 
 
-      function fetchTrelloCards() {
-        const boardId = localStorage.getItem('boardId');
-        if (!boardId) {
-          console.error("ID do quadro não encontrado no localStorage");
-          return;
+      function clearBoardData() {
+        localStorage.removeItem('nomeEmpresaTrello');
+        localStorage.removeItem('asanaBoardName');
+        localStorage.removeItem('trelloListIds');
+        // e qualquer outra coisa que você queira limpar
+      }
+
+      var originalData = [];
+
+      async function cadastrarTarefasAtuais() {
+        event.preventDefault();
+        var tarefas = [];
+    
+        var tabela = document.getElementById('trello-table-body');
+    
+        for (var row of tabela.rows) {
+            var squadName = row.cells[6].textContent;
+            var status = row.cells[2].textContent;
+            try {
+                let response = await fetch('/get_squad_id?squad_name=' + encodeURIComponent(squadName));
+                let data = await response.json();
+    
+                if (data.success) {
+                    tarefas.push({
+                        empresa: row.cells[5].textContent,
+                        squad_name: squadName,
+                        squad_id: data.squad_id, // Obtendo o ID do esquadrão
+                        tarefa: row.cells[0].textContent,
+                    });
+                } else {
+                    console.log('Erro ao obter ID do esquadrão:', data.error);
+                }
+            } catch (error) {
+                console.log('Erro na chamada fetch:', error);
+            }
         }
+    
+        try {
+          if(status == "Tarefas em andamento"){
+              let response = await fetch('/cadastrar_tarefas_atuais', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ tarefas })
+              });
+              let data = await response.json();
       
-        const listIds = JSON.parse(localStorage.getItem('trelloListIds'));
-        if (!listIds) {
-          console.error("IDs das listas não encontrados no localStorage");
-          return;
+              if (data.success) {
+                  alert('Tarefas cadastradas com sucesso!');
+              } else {
+                  console.log(data.error);
+              }
+          }
+          else if(status == "Tarefas concluídas"){
+            let response = await fetch('/cadastrar_tarefas_concluidas', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ tarefas })
+              });
+              let data = await response.json();
+      
+              if (data.success) {
+                  alert('Tarefas cadastradas com sucesso!');
+            } else {
+                console.log(data.error);
+            }
+          }
+        } catch (error) {
+            alert('Erro ao cadastrar tarefas:' + error);
         }
+    }
+
+      function fetchOpenBoards() {
+        fetch('https://api.trello.com/1/members/me/boards?key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E')
+          .then(response => response.json())
+          .then(boards => {
+            const openBoards = boards.filter(board => !board.closed);
+            openBoards.forEach(board => fetchTrelloCards(board.id, board.name));
+          })
+          .catch(err => console.error(err));
+      }
+
+
+      function fetchTrelloCards(boardId, boardName) {
+        const plataforma = localStorage.getItem('plataformaTrello');
+        const nomeEmpresaTrello = localStorage.getItem('nomeEmpresaTrello');
+        const listIds = JSON.parse(localStorage.getItem('trelloListIds'));
       
         fetch(`https://api.trello.com/1/boards/${boardId}/cards?key=d76678cf9b909f80d60469a324cbfb8c&token=ATTAc8c23fed4d5ae8e1f4a0347d14f937eefb007a09d7025bbeb6ec010f6676a4365AF0E04E`, {
           method: 'GET',
@@ -64,34 +158,33 @@
                   break;
                 default:
                   pos = card.idList;
-              }
-      
-              var timestampHex = card.id.substring(0, 8);
-              var timestamp = parseInt(timestampHex, 16) * 1000;
-              var creationDate = new Date(timestamp).toLocaleDateString();
-      
-              return {
-                nome_tarefa: card.name,
-                desc: card.desc,
-                pos: pos,
-                start: creationDate,
-                close: "",
-                nome_empresa: "Squad Farinelli" // Nome do quadro
-              };
-            });
-      
-            populateTable(treatedData);
-            fetchAsanaTasks();
-            fetchMondayAllItems(4919630459);
-          })
-          .catch(err => console.error(err));
-      }
+                }
+
+                var timestampHex = card.id.substring(0, 8);
+                var timestamp = parseInt(timestampHex, 16) * 1000;
+                var creationDate = new Date(timestamp).toLocaleDateString();
+        
+                return {
+                  nome_tarefa: card.name,
+                  desc: card.desc,
+                  pos: pos,
+                  start: creationDate,
+                  close: "",
+                  nome_empresa: nomeEmpresaTrello,
+                  nome_squad: boardName,
+                  plataforma: plataforma // Nome do quadro
+                };
+              });
+              addData(treatedData); // Chame a função addData com os dados tratados
+            })
+            .catch(err => console.error(err));
+        }
 
 
 
       function fetchAsanaTasks() {
-        const sections = JSON.parse(localStorage.getItem('secoesCriadas'));
-        const boardName = localStorage.getItem('asanaBoardName');
+        const nomeEmpresaAsana = localStorage.getItem('nomeEmpresaAsana');
+        const plataforma = localStorage.getItem('plataformaAsana');
       
         const formatDate = (dateString) => {
           const date = new Date(dateString);
@@ -101,53 +194,79 @@
           return `${day}/${month}/${year}`;
         };
       
-        const promises = sections.map(sectionObj => {
-          const sectionName = sectionObj.data.name;
-          const sectionGid = sectionObj.data.gid;
+        // Primeiro, vamos buscar os projetos
+        fetch(`https://app.asana.com/api/1.0/projects?archived=false`, {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
+            'Accept': 'application/json'
+          }
+        })
+        .then(response => response.json())
+        .then(projectsData => {
+          projectsData.data.forEach(project => {
+            const projectId = project.gid;
+            const boardName = project.name;
       
-          console.log(`Buscando tarefas para a seção ${sectionName} com GID ${sectionGid}`); // Log
+            // Depois, para cada projeto, buscar as seções
+            fetch(`https://app.asana.com/api/1.0/projects/${projectId}/sections`, {
+              method: 'GET',
+              headers: {
+                'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
+                'Accept': 'application/json'
+              }
+            })
+            .then(response => response.json())
+            .then(sectionsData => {
+              const promises = sectionsData.data.map(section => {
+                const sectionName = section.name;
+                const sectionGid = section.gid;
       
-          return fetch(`https://app.asana.com/api/1.0/sections/${sectionGid}/tasks`, {
-            method: 'GET',
-            headers: {
-              'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
-              'Accept': 'application/json'
-            }
-          })
-          .then(response => {
-            console.log(`Resposta recebida para a seção ${sectionName}:`, response); // Log
-            return response.json();
-          })
-          .then(data => {
-            const taskPromises = data.data.map(task =>
-              fetch(`https://app.asana.com/api/1.0/tasks/${task.gid}`, {
-                method: 'GET',
-                headers: {
-                  'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
-                  'Accept': 'application/json'
-                }
-              })
-              .then(response => response.json())
-              .then(taskData => ({
-                nome_tarefa: taskData.data.name,
-                desc: "",
-                pos: sectionName,
-                start: taskData.data.created_at ? formatDate(taskData.data.created_at) : "",
-                close: "",
-                nome_empresa: boardName
-              }))
-            );
+                // Finalmente, buscar as tarefas para cada seção
+                return fetch(`https://app.asana.com/api/1.0/sections/${sectionGid}/tasks`, {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
+                    'Accept': 'application/json'
+                  }
+                })
+                .then(response => response.json())
+                .then(data => {
+                  const taskPromises = data.data.map(task =>
+                    fetch(`https://app.asana.com/api/1.0/tasks/${task.gid}`, {
+                      method: 'GET',
+                      headers: {
+                        'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
+                        'Accept': 'application/json'
+                      }
+                    })
+                    .then(response => response.json())
+                    .then(taskData => ({
+                      nome_tarefa: taskData.data.name,
+                      desc: "",
+                      pos: sectionName,
+                      start: taskData.data.created_at ? formatDate(taskData.data.created_at) : "",
+                      close: "",
+                      nome_empresa: nomeEmpresaAsana,
+                      nome_squad: boardName,
+                      plataforma: plataforma // Nome do quadro
+                    }))
+                  );
       
-            return Promise.all(taskPromises);
+                  return Promise.all(taskPromises);
+                });
+              });
+      
+              Promise.all(promises)
+                .then(results => [].concat(...results))
+                .then(treatedData => {
+                  addData(treatedData); // Chame a função addData aqui
+                })
+                .catch(err => console.error("Erro nas promessas:", err)); // Verifique erros nas promessas
+            });
           });
         });
-      
-        Promise.all(promises)
-          .then(results => [].concat(...results))
-          .then(treatedData => populateTable(treatedData))
-          .catch(err => console.error(err));
       }
-
 
 
 
@@ -192,7 +311,7 @@
                 nome_tarefa: item.name,
                 pos: status === 0 ? "To Do" : status === 1 ? "Doing" : "Done",
                 start: creationDate,
-                nome_empresa: "Monday"
+                nome_squad: "Monday"
               };
             });
         
@@ -202,9 +321,32 @@
         }
         
 
+        function filterTable() {
+          var filterValue = document.getElementById('filter').value.trim(); // Remova qualquer espaço em branco
+          var data = originalData;
+        
+         
+        
+          if (filterValue) {
+            data = data.filter(item => {
+              return item.pos === filterValue;
+            });
+          }
+        
+          console.log("Dados filtrados:", data); // Imprime os dados após o filtro
+        
+          populateTable(data);
+        }
+
+        function addData(newData) {
+          originalData = originalData.concat(newData);
+          populateTable(originalData);
+        }
+
 
         function populateTable(data) {
           var tbody = document.getElementById('trello-table-body');
+          tbody.innerHTML = ''
 
           for (var i = 0; i < data.length; i++) {
             var tr = document.createElement('tr');
@@ -233,11 +375,23 @@
             tdEmpresa.textContent = data[i].nome_empresa;
             tr.appendChild(tdEmpresa);
 
+            var tdSquad = document.createElement('td');
+            tdSquad.textContent = data[i].nome_squad;
+            tr.appendChild(tdSquad);
+
+            var tdPlat = document.createElement('td');
+            tdPlat.textContent = data[i].plataforma;
+            tr.appendChild(tdPlat);
+
+            
             tbody.appendChild(tr);
           }
         }
 
-        fetchTrelloCards();
+        fetchOpenBoards();
+        fetchAsanaTasks();
+
+        
 
         
     </script>
