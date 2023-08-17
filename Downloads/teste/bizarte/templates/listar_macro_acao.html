@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lista de Macro Ações</title>
+  <link rel="stylesheet" href="styleLogin.css">
+</head>
+<body>
+  <br><br>
+  <select id="empresa" name="empresa">
+    {% for empresa in empresas %}
+      <option value="{{ empresa.id }}" data-name="{{ empresa.nome }}">{{ empresa.nome }}</option>
+    {% endfor %}
+  </select><br>
+  <br>
+  <br>
+  <br><br>
+  <table class="styled-table">
+    <thead>
+      <tr>
+        <th>Texto</th>
+        <th>Data de Inclusão</th>
+        <th>Objetivo</th>
+        <th>Empresa</th>
+        <th>Squad</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="macroacao-table-body">
+      <!-- O conteúdo da tabela será preenchido pelo JavaScript -->
+    </tbody>
+  </table>
+
+  <script>
+    window.onload = function() {
+        fetchMacroAcoes();
+    }
+
+    function fetchMacroAcoes() {
+        fetch('/api/macroacoes')
+            .then(response => {
+                if (!response.ok) {
+                    console.log("Erro ao buscar macroações: " + response.status);
+                    throw new Error('Erro ao buscar macroações');
+                }
+                return response.json();
+            })
+            .then(data => {
+                populateTable(data);
+            })
+            .catch(error => console.log("Erro: " + error));
+    }
+
+    function populateTable(data) {
+        var tbody = document.getElementById('macroacao-table-body');
+        tbody.innerHTML = '';
+
+        data.forEach(macroacao => {
+            let row = `<tr>
+                <td>${macroacao.texto}</td>
+                <td>${macroacao.data_inclusao}</td>
+                <td>${macroacao.objetivo}</td>
+                <td>${macroacao.empresa}</td>
+                <td>${macroacao.squad.nome}</td>
+                <td>Ações</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+  </script>
+
+{% endblock %}

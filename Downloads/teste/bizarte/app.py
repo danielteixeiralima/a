@@ -194,36 +194,139 @@ def get_squads():
 @app.route('/get_okrs', methods=['GET'])
 def get_okrs():
     nome_squad = request.args.get('nome_squad')
-    print(nome_squad)
+    nome_empresa = request.args.get('nome_empresa')
+
+    # Obter o ID da empresa com base no nome_empresa
+    empresa = Empresa.query.filter_by(nome_contato=nome_empresa).first()
+    if not empresa:
+        return jsonify(error="Empresa não encontrada"), 404
+
+    empresa_id = empresa.id
+
+    # Atualize a consulta para filtrar com base no nome_squad e empresa_id
     okrs = OKR.query \
-        .join(OKR.squad) \
-        .filter(Squad.nome_squad == nome_squad) \
+        .join(Squad, Squad.id == OKR.squad_id) \
+        .filter(Squad.nome_squad == nome_squad, Squad.empresa_id == empresa_id) \
         .all()
 
     result = [okr.objetivo for okr in okrs]
-
     return jsonify(result)
 
 @app.route('/get_krs', methods=['GET'])
 def get_krs():
     nome_squad = request.args.get('nome_squad')
-    krs = KR.query.join(KR.squad).filter(Squad.nome_squad == nome_squad).all()
+    nome_empresa = request.args.get('nome_empresa')
+    print(nome_empresa)
+
+    # Obter a empresa com base no nome_empresa
+    empresa = Empresa.query.filter_by(nome_contato=nome_empresa).first()  # Atualizado aqui
+    if not empresa:
+        print(f"Empresa com nome {nome_empresa} não encontrada.")
+        return jsonify(error="Empresa não encontrada"), 404
+
+    # Obter o Squad com base no nome_squad e que está vinculado à empresa especificada
+    squad = Squad.query.filter_by(nome_squad=nome_squad, empresa_id=empresa.id).first()
+    if not squad:
+        print(f"Squad com nome {nome_squad} não encontrado para a empresa {nome_empresa}.")
+        return jsonify(error="Squad não encontrado para a empresa especificada"), 404
+
+    squad_id = squad.id
+    print(f"Squad ID sendo filtrado KR: {squad_id}") 
+
+    # Obter KRs com base no squad_id
+    krs = KR.query.filter_by(squad_id=squad_id).all()
+
+    # Obter todos os squad_ids dos KRs para diagnóstico
+    all_macro_acoes_squad_ids = [ma.squad_id for ma in KR.query.all()]
+    print(f"Todos os squad_ids dos KR: {all_macro_acoes_squad_ids}") 
+
     result = [kr.texto for kr in krs]
     return jsonify(result)
 
 @app.route('/get_macro_acoes', methods=['GET'])
 def get_macro_acoes():
     nome_squad = request.args.get('nome_squad')
-    macro_acoes = MacroAcao.query.join(MacroAcao.squad).filter(Squad.nome_squad == nome_squad).all()
+    nome_empresa = request.args.get('nome_empresa')
+    print(nome_empresa)
+
+    # Obter a empresa com base no nome_empresa
+    empresa = Empresa.query.filter_by(nome_contato=nome_empresa).first()
+    if not empresa:
+        print(f"Empresa com nome {nome_empresa} não encontrada.")
+        return jsonify(error="Empresa não encontrada"), 404
+
+    # Obter o Squad com base no nome_squad e que está vinculado à empresa especificada
+    squad = Squad.query.filter_by(nome_squad=nome_squad, empresa_id=empresa.id).first()
+    if not squad:
+        print(f"Squad com nome {nome_squad} não encontrado para a empresa {nome_empresa}.")
+        return jsonify(error="Squad não encontrado para a empresa especificada"), 404
+
+    squad_id = squad.id
+    print(f"Squad ID sendo filtrado para Macro Ações: {squad_id}") 
+
+    # Obter Macro Ações com base no squad_id
+    macro_acoes = MacroAcao.query.filter_by(squad_id=squad_id).all()
+    print(f"Número de Macro Ações encontradas: {len(macro_acoes)}")  # Log do número de registros encontrados
+
     result = [macro_acao.texto for macro_acao in macro_acoes]
     return jsonify(result)
+
+@app.route('/api/meta-semanal', methods=['GET'])
+def get_meta_semanal():
+    tarefaId = request.args.get('tarefaId')
+
+    if not tarefaId:
+        return jsonify({"error": "tarefaId é obrigatório!"}), 400
+
+    tarefa = TarefasMetasSemanais.query.filter_by(id=tarefaId).first()
+
+    if not tarefa:
+        return jsonify({"error": "Tarefa não encontrada!"}), 404
+
+    return jsonify({"meta_semanal": tarefa.meta_semanal})
+
+@app.route('/api/get-tarefa-id', methods=['GET'])
+def get_tarefa_id():
+    nome = request.args.get('nome')
+
+    if not nome:
+        return jsonify({"error": "Nome da tarefa é obrigatório!"}), 400
+
+    tarefa = TarefasMetasSemanais.query.filter_by(tarefa=nome).first()
+
+    if not tarefa:
+        return jsonify({"error": "Tarefa não encontrada!"}), 404
+
+    return jsonify({"id": tarefa.id})
 
 @app.route('/get_tarefas_metas_semanais', methods=['GET'])
 def get_tarefas_metas_semanais():
     nome_squad = request.args.get('nome_squad')
-    tarefas_metas_semanais = TarefasMetasSemanais.query.join(TarefasMetasSemanais.squad).filter(Squad.nome_squad == nome_squad).all()
+    nome_empresa = request.args.get('nome_empresa')
+    #print(nome_empresa)
+
+    # Obter a empresa com base no nome_empresa
+    empresa = Empresa.query.filter_by(nome_contato=nome_empresa).first()
+    if not empresa:
+        print(f"Empresa com nome {nome_empresa} não encontrada.")
+        return jsonify(error="Empresa não encontrada"), 404
+
+    # Obter o Squad com base no nome_squad e que está vinculado à empresa especificada
+    squad = Squad.query.filter_by(nome_squad=nome_squad, empresa_id=empresa.id).first()
+    if not squad:
+        print(f"Squad com nome {nome_squad} não encontrado para a empresa {nome_empresa}.")
+        return jsonify(error="Squad não encontrado para a empresa especificada"), 404
+
+    squad_id = squad.id
+    #print(f"Squad ID sendo filtrado para Tarefas e Metas Semanais: {squad_id}") 
+
+    # Obter Tarefas e Metas Semanais com base no squad_id
+    tarefas_metas_semanais = TarefasMetasSemanais.query.filter_by(squad_id=squad_id).all()
+    #print(f"Número de Tarefas e Metas Semanais encontradas: {len(tarefas_metas_semanais)}")  # Log do número de registros encontrados
+
     result = [item.tarefa for item in tarefas_metas_semanais]
     return jsonify(result)
+
 
 @app.route('/cadastrar/post', methods=['POST'])
 def cadastrar_post():
@@ -1168,6 +1271,7 @@ def cadastrar_kr():
 def get_squad_id():
     try:
         squad_name = request.args.get('squad_name')
+        print(squad_name)
         squad = Squad.query.filter_by(nome_squad=squad_name).first()
         if not squad:
             return jsonify(success=False, error="Squad não encontrado")

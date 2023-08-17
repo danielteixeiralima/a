@@ -22,14 +22,10 @@
                   <!-- As opções serão preenchidas dinamicamente -->
               </select>
             </div>
-            <div class="form-group">
-                <label for="nome_tarefa_trello">Nome da tarefa:</label>
-                <input type="text" id="nome_tarefa_trello" name="nome_tarefa_trello">
-            </div>
+           
     
-            <input type="button" name="trello" onclick="createTrelloCard(document.getElementById('nome_tarefa_trello').value)" value="Enviar">
-              <input type="submit" id="createBoardButtonTrello" name="trelloBoard" value="Criar Board" onclick="criarBoardTrello(event)">  
-             <!-- <input type="submit" id="createBoardButtonTrello" name="trelloBoard" value="Criar Board" onclick="deleteAllProjectsInWorkspace()">  -->
+             <input type="submit" id="createBoardButtonTrello" name="trelloBoard" value="Criar Board" onclick="criarBoardTrello(event)">  
+              <!-- <input type="submit" id="createBoardButtonTrello" name="trelloBoard" value="Criar Board" onclick="deleteAllProjectsInWorkspace()">   -->
 
         </form>
     </div>
@@ -40,10 +36,9 @@
                 <div class="form-group">
                     <label for="nome_empresa_asana">Nome da empresa:</label>
                     <select id="nome_empresa_asana" name="nome_empresa_asana" onchange="updateSquadOptionsAsana()">
-                      <option value="Pontal">Pontal</option>
-                        
                         <option value="Colégio Mopi">Colégio Mopi</option>
-                        <option value="Espaço Pontal">Espaço Pontal</option>
+                        <option value="Sette7">Sette7</option>
+                        <option value="ES360">ES360</option>
                     </select>
                 </div>
                   <div class="form-group">
@@ -52,31 +47,31 @@
                         <!-- As opções serão preenchidas dinamicamente -->
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="nome_tarefa_asana">Nome da tarefa:</label>
-                    <input type="text" id="nome_tarefa_asana" name="nome_tarefa_asana">
-                </div>
-                <input type="button" id="asanaSubmitButton" name="asana" value="Enviar">
+                
                 <input type="submit" id="createBoardButtonAsana" name="asanaBoard" value="Criar Board" onclick="criarBoardAsana(event)">
             </form>
         </div>
 
 
         <div class="grid-item">
-            <h2>Monday</h2>
-            <form>
-                <div class="form-group">
-                    <label for="nome_empresa_monday">Nome da empresa:</label>
-                    <select id="nome_empresa_monday" name="nome_empresa_monday" onchange="updateSquadOptions()">
-                      
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="nome_tarefa_monday">Nome da tarefa:</label>
-                    <input type="text" id="nome_tarefa_monday" name="nome_tarefa_monday">
-                </div>
-                <input type="submit" name="monday" value="Enviar">
-            </form>
+          <h2>Monday</h2>
+          <form>
+            <div class="form-group">
+              <label for="nome_empresa_monday">Nome da empresa:</label>
+              <select id="nome_empresa_monday" name="nome_empresa_monday" onchange="updateSquadOptionsMonday()">
+                <option value="Colégio Mopi">Colégio Mopi</option>
+                <option value="Espaço Pontal">Espaço Pontal</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="nome_squad_monday">Nome do squad:</label>
+              <select id="nome_squad_monday" name="nome_squad_monday" onchange="updateOKROptions()">
+                <!-- As opções serão preenchidas dinamicamente -->
+              </select>
+            </div>
+            
+            <input type="submit" id="createBoardButtonMonday" name="mondayBoard" value="Criar Board" onclick="criarBoardMonday(event)">
+          </form>
         </div>
 
 
@@ -90,12 +85,15 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="nome_tarefa_kanbanize">Nome da tarefa:</label>
-                    <input type="text" id="nome_tarefa_kanbanize" name="nome_tarefa_kanbanize">
-                </div>
+                  <label for="nome_squad_kanba">Nome do squad:</label>
+                  <select id="nome_squad_kanba" name="nome_squad_kanba" onchange="updateOKROptions()">
+                      <!-- As opções serão preenchidas dinamicamente -->
+                  </select>
+              </div>
+              
                 
-                <input type="submit" name="kanbanize" value="Enviar">
-            </form>
+                <input type="submit" id="createBoardButtonKanba" name="kanbaBoard" value="Criar Board" onclick="criarBoardKanba(event)">
+              </form>
         </div>
     </div>
 
@@ -260,50 +258,78 @@
 
 
 
-
-
-
-
-
-
-
-
-          async function criarBoardAsana(event) {
-            event.preventDefault();
-            const nomeSquadSelect = document.getElementById('nome_squad_asana').value
-            const nomeEmpresaAsana = document.getElementById('nome_empresa_asana').value
-            localStorage.setItem('nomeEmpresaAsana', nomeEmpresaAsana);
-            const plataforma = "Asana"
-
-
-            const boardName = nomeSquadSelect; // Nome do board
-            var url = "https://app.asana.com/api/1.0/projects";
-            var data = {
+          window.onload = function() {
+            // Inicializar a variável empresasTokens no localStorage
+            const empresasTokens = [
+                {
+                    nome: "Sette7",
+                    token: 'Bearer 1/1198735305571370:365e53e913a327a68486518d9fa4363e',
+                    workspace: '1205278753339325',
+                    team: '1205278753339327'
+                }, 
+                {
+                  nome: "ES360",
+                  token: 'Bearer 1/1150237826145564:8aa093214a72b8a8c73eff3cb5a777ac',
+                  workspace: '16363265495050',
+                  team: '1205288598041717'
+                }
+                // Adicione mais empresas e tokens conforme necessário
+            ];
+            localStorage.setItem('empresasTokens', JSON.stringify(empresasTokens));
+        };
+        
+        async function criarBoardAsana(event) {
+          event.preventDefault();
+          const nomeSquadSelect = document.getElementById('nome_squad_asana').value;
+          const nomeEmpresaAsana = document.getElementById('nome_empresa_asana').value;
+          console.log("Nome da empresa selecionada:", nomeEmpresaAsana);
+      
+          localStorage.setItem('nomeEmpresaAsana', nomeEmpresaAsana);
+          const plataforma = "Asana";
+      
+          const boardName = nomeSquadSelect; // Nome do board
+      
+          // Obter o token, workspace e team correspondente ao nome da empresa selecionada
+          const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+          const empresaObj = empresasTokens.find(empresa => empresa.nome === nomeEmpresaAsana);
+      
+          if (!empresaObj) {
+              console.error("Empresa não encontrada no array empresasTokens.");
+              return; // Encerra a execução da função
+          }
+      
+          const empresaToken = empresaObj.token;
+          const empresaWorkspace = empresaObj.workspace; // Obter o workspace da empresa selecionada
+          const empresaTeam = empresaObj.team; // Obter o team da empresa selecionada
+      
+          var url = "https://app.asana.com/api/1.0/projects";
+          var data = {
               "data": {
-                "workspace": "2028133077413",
-                "team": "43076172056260",
-                "name": boardName // Usando a variável aqui
+                  "workspace": empresaWorkspace, // Usando o workspace da empresa selecionada
+                  "team": empresaTeam, // Usando o team da empresa selecionada
+                  "name": boardName // Usando a variável aqui
               }
-            };
-          
-            try {
+          };
+          console.log(empresaWorkspace)
+      
+          try {
               const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
-                },
-                body: JSON.stringify(data)
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': empresaToken
+                  },
+                  body: JSON.stringify(data)
               });
-          
+      
               const responseData = await response.json();
+              console.log(responseData)
               var projectID = responseData.data.gid;
-          
+      
               localStorage.setItem('projectID', JSON.stringify(projectID));
               localStorage.setItem('asanaBoardName', boardName);
               localStorage.setItem('plataformaAsana', plataforma);  // Armazenando o nome do board no localStorage
-          
-          
+      
               // Chamar a função para criar as seções, passando o ID do projeto
               await criarSecoes(projectID);
               await createOKRTasks()
@@ -312,167 +338,240 @@
               await createTarefasMetasSemanaisTasksAsana();
               // Obter todas as seções
               const sections = await getSections(projectID);
-          
+      
               // Encontrar a seção com o nome "Seção sem título"
               const untitledSection = sections.find(section => section.name === "Seção sem título");
-          
+      
               if (untitledSection) {
-                await deleteSection(untitledSection.gid);
+                  await deleteSection(untitledSection.gid);
               }
-          
-            } catch (error) {
+      
+          } catch (error) {
               console.error("Houve um erro ao criar o board:", error);
-            }
           }
+      }
 
-
-          async function criarSecoes(projectID) {
-            var url = "https://app.asana.com/api/1.0/projects/" + projectID + "/sections";
-            var secoes = ["Objetivo", "KR", "Macro Ações", "Meta semanal e Tarefas", "Tarefas em andamento", "Tarefas concluídas"];
-            var secoesCriadas = [];
-          
-            for (let nomeSecao of secoes) {
-              var data = {
+      async function criarSecoes(projectID) {
+        var url = "https://app.asana.com/api/1.0/projects/" + projectID + "/sections";
+        var secoes = ["Objetivo", "KR", "Macro Ações", "Meta semanal e Tarefas", "Tarefas em andamento", "Tarefas concluídas"];
+        var secoesCriadas = [];
+    
+        // Obter o token de autorização com base no nome da empresa
+        const nomeEmpresaAsana = localStorage.getItem('nomeEmpresaAsana');
+        const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+        const empresaObj = empresasTokens.find(empresa => empresa.nome === nomeEmpresaAsana);
+        if (!empresaObj) {
+            console.error("Empresa não encontrada no array empresasTokens.");
+            return; // Encerra a execução da função
+        }
+        const empresaToken = empresaObj.token;
+    
+        for (let nomeSecao of secoes) {
+            var data = {
                 "data": {
-                  "name": nomeSecao
+                    "name": nomeSecao
                 }
-              };
-          
-              try {
+            };
+    
+            try {
                 const response = await fetch(url, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
-                  },
-                  body: JSON.stringify(data)
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': empresaToken
+                    },
+                    body: JSON.stringify(data)
                 });
-          
+    
                 if (!response.ok) {
-                  console.error("Erro ao criar a seção:", await response.text());
-                  continue;
+                    console.error("Erro ao criar a seção:", await response.text());
+                    continue;
                 }
-          
+    
                 const responseData = await response.json();
                 console.log("Seção '" + nomeSecao + "' criada com sucesso:", responseData);
                 secoesCriadas.push(responseData); // Adiciona a seção criada ao array
-              } catch (error) {
+            } catch (error) {
                 console.error("Houve um erro ao criar a seção '" + nomeSecao + "':", error);
-              }
             }
-          
-            // Armazena o array de seções criadas no localStorage
-            localStorage.setItem('secoesCriadas', JSON.stringify(secoesCriadas));
-          }
-
-         
-          
-
-          async function getSections(projectID) {
-            var url = "https://app.asana.com/api/1.0/projects/" + projectID + "/sections";
-            try {
-              const response = await fetch(url, {
+        }
+    
+        // Armazena o array de seções criadas no localStorage
+        localStorage.setItem('secoesCriadas', JSON.stringify(secoesCriadas));
+    }
+    
+    async function getSections(projectID) {
+        var url = "https://app.asana.com/api/1.0/projects/" + projectID + "/sections";
+    
+        // Obter o token de autorização com base no nome da empresa
+        const nomeEmpresaAsana = localStorage.getItem('nomeEmpresaAsana');
+        const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+        const empresaObj = empresasTokens.find(empresa => empresa.nome === nomeEmpresaAsana);
+        if (!empresaObj) {
+            console.error("Empresa não encontrada no array empresasTokens.");
+            return []; // Retorna um array vazio
+        }
+        const empresaToken = empresaObj.token;
+    
+        try {
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                  'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                    'Authorization': empresaToken
                 }
-              });
-              const data = await response.json();
-              return data.data;
-            } catch (error) {
-              console.error("Erro ao obter seções:", error);
-              return [];
-            }
-          }
+            });
+            const data = await response.json();
+            return data.data;
+        } catch (error) {
+            console.error("Erro ao obter seções:", error);
+            return [];
+        }
+    }
           
 
-          async function deleteSection(sectionGID) {
-            var url = "https://app.asana.com/api/1.0/sections/" + sectionGID;
-            try {
-              await fetch(url, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
-                }
-              });
-             
-            } catch (error) {
-              console.error("Erro ao deletar seção:", error);
-            }
-          }
-
-
-          async function createTaskInSection(projectID, taskName) {
-            var projectID = JSON.parse(localStorage.getItem('projectID'));
-            if (!projectID) {
-              console.error("projectID não encontrado no localStorage");
-              return;
-            }
-          
-            // Obter todas as seções usando a nova função
-            const sections = await getSections(projectID);
-            console.log("Seções obtidas:", sections); // Log para depuração
-          
-            // Encontrar a seção com o nome "Meta semanal e Tarefas"
-            const targetSection = sections.find(section => section.name === "Meta semanal e Tarefas");
-          
-            if (!targetSection) {
-              console.error("Seção 'Meta semanal e Tarefas' não encontrada");
-              return;
-            }
-          
-            console.log("Seção encontrada:", targetSection);
-          
-            // URL para adicionar uma tarefa
-            var url = "https://app.asana.com/api/1.0/tasks";
-          
-            // Dados para a nova tarefa
-            var data = {
-              "data": {
-                "name": taskName,
-                "projects": [projectID] // Inclua o ID do projeto aqui
+    async function deleteSection(sectionGID) {
+      var url = "https://app.asana.com/api/1.0/sections/" + sectionGID;
+  
+      // Obter o token de autorização com base no nome da empresa
+      const nomeEmpresaAsana = localStorage.getItem('nomeEmpresaAsana');
+      const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+      const empresaObj = empresasTokens.find(empresa => empresa.nome === nomeEmpresaAsana);
+      if (!empresaObj) {
+          console.error("Empresa não encontrada no array empresasTokens.");
+          return; // Encerra a execução da função
+      }
+      const empresaToken = empresaObj.token;
+  
+      try {
+          await fetch(url, {
+              method: 'DELETE',
+              headers: {
+                  'Authorization': empresaToken
               }
-            };
-          
+          });
+      } catch (error) {
+          console.error("Erro ao deletar seção:", error);
+      }
+  }
+  
+  async function createTaskInSection(projectID, taskName) {
+      var projectID = JSON.parse(localStorage.getItem('projectID'));
+      if (!projectID) {
+          console.error("projectID não encontrado no localStorage");
+          return;
+      }
+  
+      // Obter o token de autorização com base no nome da empresa
+      const nomeEmpresaAsana = localStorage.getItem('nomeEmpresaAsana');
+      const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+      const empresaObj = empresasTokens.find(empresa => empresa.nome === nomeEmpresaAsana);
+      if (!empresaObj) {
+          console.error("Empresa não encontrada no array empresasTokens.");
+          return; // Encerra a execução da função
+      }
+      const empresaToken = empresaObj.token;
+  
+      // Obter todas as seções usando a nova função
+      const sections = await getSections(projectID);
+      console.log("Seções obtidas:", sections); // Log para depuração
+  
+      // Encontrar a seção com o nome "Meta semanal e Tarefas"
+      const targetSection = sections.find(section => section.name === "Meta semanal e Tarefas");
+  
+      if (!targetSection) {
+          console.error("Seção 'Meta semanal e Tarefas' não encontrada");
+          return;
+      }
+  
+      console.log("Seção encontrada:", targetSection);
+  
+      // URL para adicionar uma tarefa
+      var url = "https://app.asana.com/api/1.0/tasks";
+  
+      // Dados para a nova tarefa
+      var data = {
+          "data": {
+              "name": taskName,
+              "projects": [projectID] // Inclua o ID do projeto aqui
+          }
+      };
+  
+      try {
+          const response = await fetch(url, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': empresaToken
+              },
+              body: JSON.stringify(data)
+          });
+          const responseData = await response.json();
+          console.log("Resposta da API:", responseData);
+  
+          if (responseData.data && responseData.data.gid) {
+              // Mover a tarefa para a seção desejada
+              const taskID = responseData.data.gid;
+              const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
+              const moveData = {
+                  "data": {
+                      "task": taskID
+                  }
+              };
+  
+              await fetch(moveUrl, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': empresaToken
+                  },
+                  body: JSON.stringify(moveData)
+              });
+  
+              console.log("Tarefa '" + taskName + "' criada com sucesso na seção 'Meta semanal e Tarefas'");
+          } else {
+              console.error("Falha ao criar tarefa. Resposta da API:", responseData);
+          }
+      } catch (error) {
+          console.error("Erro ao criar tarefa:", error);
+      }
+  }
+
+
+          async function createTaskInMonday(boardID, groupName, taskName) {
+            const url = "https://api.monday.com/v2";
+            
+            // Construindo a query GraphQL
+            const query = `
+              mutation {
+                create_item(board_id: ${boardID}, group_id: "${groupName}", item_name: "${taskName}") {
+                  id
+                }
+              }`;
+
             try {
               const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                  'Authorization': 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjI3MjY3NjMyMywiYWFpIjoxMSwidWlkIjo0NjU2NjU2OSwiaWFkIjoiMjAyMy0wOC0wMlQxNzoyMDowMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTgxMDI1ODMsInJnbiI6InVzZTEifQ.xJCdBQja5b-jEAlP_Mga8Dh65iVC0glZhxUsPoCzMl0'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify({
+                  query: query
+                })
               });
+              
               const responseData = await response.json();
-              console.log("Resposta da API:", responseData);
-          
-              if (responseData.data && responseData.data.gid) {
-                // Mover a tarefa para a seção desejada
-                const taskID = responseData.data.gid;
-                const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
-                const moveData = {
-                  "data": {
-                    "task": taskID
-                  }
-                };
-          
-                await fetch(moveUrl, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
-                  },
-                  body: JSON.stringify(moveData)
-                });
-          
-                console.log("Tarefa '" + taskName + "' criada com sucesso na seção 'Meta semanal e Tarefas'");
-              } else {
-                console.error("Falha ao criar tarefa. Resposta da API:", responseData);
+              
+              if (responseData.errors) {
+                console.error("Erro ao criar tarefa no Monday:", responseData.errors);
+                return;
               }
+
+              console.log(`Tarefa ${taskName} criada com sucesso no board ID ${boardID}, grupo ${groupName}`);
             } catch (error) {
-              console.error("Erro ao criar tarefa:", error);
+              console.error("Erro na criação da tarefa no Monday:", error);
             }
-          }
+}
 
           function createTask(event, projectID) {
             event.preventDefault(); // Isso deve evitar o recarregamento da página
@@ -590,7 +689,7 @@
         async function deleteAllProjectsInWorkspace() {
           event.preventDefault(); // Isso evitará que a página seja atualizada
 
-          const workspaceId = '2028133077413';
+          const workspaceId = '1205278753339325';
           const url = `https://app.asana.com/api/1.0/workspaces/${workspaceId}/projects`;
       
           try {
@@ -598,7 +697,7 @@
               const response = await fetch(url, {
                   method: 'GET',
                   headers: {
-                    'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                    'Authorization': 'Bearer 1/1198735305571370:365e53e913a327a68486518d9fa4363e'
                   }
               });
       
@@ -626,7 +725,7 @@
             const response = await fetch(url, {
                 method: 'DELETE',
                 headers: {
-                  'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                  'Authorization': 'Bearer 1/1198735305571370:365e53e913a327a68486518d9fa4363e'
                 }
             });
     
@@ -642,82 +741,119 @@
         }
     }
 
+    async function getMetaSemanalFromDB(tarefaId) {
+      // Verifica se o tarefaId foi fornecido
+      if (!tarefaId) {
+          console.error("Erro: tarefaId é obrigatório para obter meta_semanal.");
+          return null;
+      }
+  
+      // URL relativa do endpoint que retorna o meta_semanal para um tarefaId específico
+      const url = `/api/meta-semanal?tarefaId=${encodeURIComponent(tarefaId)}`;
+  
+      try {
+          const response = await fetch(url);
+          
+          // Adicionando o console.log para exibir o conteúdo bruto da resposta
+          const rawResponse = await response.text();
+  
+          // Tentando analisar a resposta como JSON
+          const data = JSON.parse(rawResponse);
+  
+          if (data.error) {
+              console.error("Erro ao obter meta_semanal do banco de dados:", data.error);
+              return null;
+          }
+  
+          return data.meta_semanal;
+      } catch (error) {
+          console.error("Erro ao obter meta_semanal do banco de dados:", error);
+          return null;
+      }
+  }
 
 
-          async function createOKRTasks() {
-            const nomeSquad = document.getElementById('nome_squad_asana').value;
-            const okrs = await getOKRs(nomeSquad);
-            const projectID = JSON.parse(localStorage.getItem('projectID'));
-        
-            // Obter todas as seções usando a função já existente
-            const sections = await getSections(projectID);
-            
-            // Encontrar a seção com o nome "Objetivo"
-            const targetSection = sections.find(section => section.name === "Objetivo");
-        
-            if (!targetSection) {
-                console.error("Seção 'Objetivo' não encontrada");
-                return;
-            }
-        
-            for (const objetivo of okrs) {
-                // URL para adicionar uma tarefa
-                var url = "https://app.asana.com/api/1.0/tasks";
-        
-                // Dados para a nova tarefa
-                var data = {
-                    "data": {
-                        "name": objetivo,
-                        "projects": [projectID]
-                    }
-                };
-        
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
-                        },
-                        body: JSON.stringify(data)
-                    });
-        
-                    const responseData = await response.json();
-        
-                    if (responseData.data && responseData.data.gid) {
-                        // Mover a tarefa para a seção desejada
-                        const taskID = responseData.data.gid;
-                        const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
-                        const moveData = {
-                            "data": {
-                                "task": taskID
-                            }
-                        };
-        
-                        await fetch(moveUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
-                            },
-                            body: JSON.stringify(moveData)
-                        });
-        
-                        console.log("OKR '" + objetivo + "' criado com sucesso na seção 'Objetivo'");
-                    } else {
-                        console.error("Falha ao criar OKR. Resposta da API:", responseData);
-                    }
-                } catch (error) {
-                    console.error("Erro ao criar OKR:", error);
-                }
-            }
-        }
 
+    async function createOKRTasks() {
+      const nomeSquad = document.getElementById('nome_squad_asana').value;
+      const nomeEmpresa = document.getElementById('nome_empresa_asana').value;
+      const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+      const empresaObj = empresasTokens.find(e => e.nome === nomeEmpresa);
+  
+      if (!empresaObj) {
+          console.error("Empresa não encontrada no array empresasTokens.");
+          return;
+      }
+  
+      const okrs = await getOKRs(nomeSquad, nomeEmpresa);
+      const projectID = JSON.parse(localStorage.getItem('projectID'));
+  
+      const sections = await getSections(projectID);
+      const targetSection = sections.find(section => section.name === "Objetivo");
+  
+      if (!targetSection) {
+          console.error("Seção 'Objetivo' não encontrada");
+          return;
+      }
+      
+  
+      for (const objetivo of okrs) {
+          var url = "https://app.asana.com/api/1.0/tasks";
+          var data = {
+              "data": {
+                  "name": objetivo,
+                  "projects": [projectID]
+              }
+          };
+  
+          // Se metaSemanal estiver presente, defina-o como a descrição da tarefa
+          
+  
+          try {
+              const response = await fetch(url, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': empresaObj.token
+                  },
+                  body: JSON.stringify(data)
+              });
+  
+              const responseData = await response.json();
+  
+              if (responseData.data && responseData.data.gid) {
+                  const taskID = responseData.data.gid;
+                  const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
+                  const moveData = {
+                      "data": {
+                          "task": taskID
+                      }
+                  };
+  
+                  await fetch(moveUrl, {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': empresaObj.token
+                      },
+                      body: JSON.stringify(moveData)
+                  });
+  
+                  console.log("OKR '" + objetivo + "' criado com sucesso na seção 'Objetivo'");
+              } else {
+                  console.error("Falha ao criar OKR. Resposta da API:", responseData);
+              }
+          } catch (error) {
+              console.error("Erro ao criar OKR:", error);
+          }
+      }
+  }
 
-          async function getOKRs(nomeSquad) {
+            async function getOKRs(nomeSquad, nomeEmpresa) {  
+              console.log(nomeEmpresa)// Adicione o parâmetro nomeEmpresa
               try {
-                  const response = await fetch(`/get_okrs?nome_squad=${nomeSquad}`);
-                  if (response.ok) {
+                  const response = await fetch(`/get_okrs?nome_squad=${nomeSquad}&nome_empresa=${nomeEmpresa}`);  // Adicione o parâmetro de consulta nome_empresa
+                   if (response.ok) {
                       return await response.json();
                   } else {
                       console.error('Erro ao obter OKRs:', response.statusText);
@@ -767,23 +903,23 @@
                 }
                 console.log('Todos os KRS foram criados');
 
-            }
-        }
-        
-        async function getKRs(nomeSquad) {
-            try {
-                const response = await fetch(`/get_krs?nome_squad=${nomeSquad}`);
-                if (response.ok) {
-                    return await response.json();
-                } else {
-                    console.error('Erro ao obter KRs:', response.statusText);
-                    return [];
-                }
-            } catch (error) {
-                console.error('Exceção ao obter KRs:', error);
-                return [];
-            }
-        }
+              }
+          }
+          
+          async function getKRs(nomeSquad, nomeEmpresa) {
+              try {
+                  const response = await fetch(`/get_krs?nome_squad=${nomeSquad}&nome_empresa=${nomeEmpresa}`);
+                  if (response.ok) {
+                      return await response.json();
+                  } else {
+                      console.error('Erro ao obter KRs:', response.statusText);
+                      return [];
+                  }
+              } catch (error) {
+                  console.error('Exceção ao obter KRs:', error);
+                  return [];
+              }
+          }
 
 
 
@@ -838,9 +974,9 @@
       }
     }
           
-          async function getMacroacoes(nomeSquad) {
+          async function getMacroacoes(nomeSquad, nomeEmpresa) {
               try {
-                  const response = await fetch(`/get_macro_acoes?nome_squad=${nomeSquad}`);
+                  const response = await fetch(`/get_macro_acoes?nome_squad=${nomeSquad}&nome_empresa=${nomeEmpresa})`);
                   console.log(response)
                   if (response.ok) {
                       return await response.json();
@@ -888,9 +1024,9 @@
             }
         }
         
-        async function getTarefasMetasSemanais(nomeSquad) {
+        async function getTarefasMetasSemanais(nomeSquad, nomeEmpresa) {
             try {
-                const response = await fetch(`/get_tarefas_metas_semanais?nome_squad=${nomeSquad}`);
+                const response = await fetch(`/get_tarefas_metas_semanais?nome_squad=${nomeSquad}&nome_empresa=${nomeEmpresa})`);
                 if (response.ok) {
                     return await response.json();
                 } else {
@@ -902,110 +1038,132 @@
                 return [];
             }
         }
-        
-        
-        
-        
-        
-        
 
-
-        
-
-
-          async function createKRTasks() {
-            const nomeSquad = document.getElementById('nome_squad_asana').value;
-            const krs = await getKRs(nomeSquad);
-            const projectID = JSON.parse(localStorage.getItem('projectID'));
-        
-            // Obter todas as seções usando a função já existente
-            const sections = await getSections(projectID);
-            
-            // Encontrar a seção com o nome "KR"
-            const targetSection = sections.find(section => section.name === "KR");
-        
-            if (!targetSection) {
-                console.error("Seção 'KR' não encontrada");
-                return;
-            }
-        
-            for (const texto of krs) {
-                // URL para adicionar uma tarefa
-                var url = "https://app.asana.com/api/1.0/tasks";
-        
-                // Dados para a nova tarefa
-                var data = {
-                    "data": {
-                        "name": texto,
-                        "projects": [projectID]
-                    }
-                };
-        
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
-                        },
-                        body: JSON.stringify(data)
-                    });
-        
-                    const responseData = await response.json();
-        
-                    if (responseData.data && responseData.data.gid) {
-                        // Mover a tarefa para a seção desejada
-                        const taskID = responseData.data.gid;
-                        const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
-                        const moveData = {
-                            "data": {
-                                "task": taskID
-                            }
-                        };
-        
-                        await fetch(moveUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
-                            },
-                            body: JSON.stringify(moveData)
-                        });
-        
-                        console.log("KR '" + texto + "' criado com sucesso na seção 'KR'");
-                    } else {
-                        console.error("Falha ao criar KR. Resposta da API:", responseData);
-                    }
-                } catch (error) {
-                    console.error("Erro ao criar KR:", error);
-                }
-            }
+        async function updateSquadOptionsMonday() {
+          const nomeEmpresa = document.getElementById('nome_empresa_monday').value;
+          const nomeSquadSelect = document.getElementById('nome_squad_monday');
+          
+          // Limpa as opções existentes
+          nomeSquadSelect.innerHTML = '';
+          
+          const squads = await getSquadsAsana(nomeEmpresa); // Implementar esta função para obter os squads
+          for (const squad of squads) {
+            const option = document.createElement('option');
+            option.value = squad; // Considerando que o resultado é uma lista de strings com os nomes dos squads
+            option.textContent = squad;
+            nomeSquadSelect.appendChild(option);
+          }
         }
         
-        async function getKRs(nomeSquad) {
-            try {
-                const response = await fetch(`/get_krs?nome_squad=${nomeSquad}`);
-                if (response.ok) {
-                    return await response.json();
-                } else {
-                    console.error('Erro ao obter KRs:', response.statusText);
-                    return [];
-                }
-            } catch (error) {
-                console.error('Exceção ao obter KRs:', error);
+        // Exemplo de implementação de função getSquadsMonday
+        async function getSquadsMonday(nomeEmpresa) {
+          // Faça uma chamada à API para obter os squads com base no nome da empresa
+          // Retorne a lista de squads como uma lista de strings
+          // Implementação da lógica depende da estrutura de dados e da API do Monday
+          return ["Squad 1", "Squad 2"]; // Exemplo de retorno
+        }
+        
+
+        async function createKRTasks() {
+          const nomeSquad = document.getElementById('nome_squad_asana').value;
+          const nomeEmpresa = document.getElementById('nome_empresa_asana').value;
+          const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+          const empresaObj = empresasTokens.find(e => e.nome === nomeEmpresa);
+      
+          if (!empresaObj) {
+              console.error("Empresa não encontrada no array empresasTokens.");
+              return;
+          }
+      
+          const krs = await getKRs(nomeSquad, nomeEmpresa);
+          const projectID = JSON.parse(localStorage.getItem('projectID'));
+      
+          const sections = await getSections(projectID);
+          const targetSection = sections.find(section => section.name === "KR");
+      
+          if (!targetSection) {
+              console.error("Seção 'KR' não encontrada");
+              return;
+          }
+      
+          for (const texto of krs) {
+              var url = "https://app.asana.com/api/1.0/tasks";
+              var data = {
+                  "data": {
+                      "name": texto,
+                      "projects": [projectID]
+                  }
+              };
+      
+              try {
+                  const response = await fetch(url, {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': empresaObj.token
+                      },
+                      body: JSON.stringify(data)
+                  });
+      
+                  const responseData = await response.json();
+      
+                  if (responseData.data && responseData.data.gid) {
+                      const taskID = responseData.data.gid;
+                      const moveUrl = `https://app.asana.com/api/1.0/sections/${targetSection.gid}/addTask`;
+                      const moveData = {
+                          "data": {
+                              "task": taskID
+                          }
+                      };
+      
+                      await fetch(moveUrl, {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': empresaObj.token
+                          },
+                          body: JSON.stringify(moveData)
+                      });
+      
+                      console.log("KR '" + texto + "' criado com sucesso na seção 'KR'");
+                  } else {
+                      console.error("Falha ao criar KR. Resposta da API:", responseData);
+                  }
+              } catch (error) {
+                  console.error("Erro ao criar KR:", error);
+              }
+          }
+      }
+      async function getKRs(nomeSquad, nomeEmpresa) {
+        try {
+            const response = await fetch(`/get_krs?nome_squad=${nomeSquad}&nome_empresa=${nomeEmpresa}`);
+            if (response.ok) {
+                return await response.json();
+            } else {
+                console.error('Erro ao obter KRs:', response.statusText);
                 return [];
             }
+        } catch (error) {
+            console.error('Exceção ao obter KRs:', error);
+            return [];
         }
+    }
 
         async function createMacroAcaoTasks() {
           const nomeSquad = document.getElementById('nome_squad_asana').value;
-          const macroAcoes = await getMacroAcoesAsana(nomeSquad);
+          const nomeEmpresa = document.getElementById('nome_empresa_asana').value;
+          const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+          const empresaObj = empresasTokens.find(e => e.nome === nomeEmpresa);
+      
+          if (!empresaObj) {
+              console.error("Empresa não encontrada no array empresasTokens.");
+              return;
+          }
+      
+          const macroAcoes = await getMacroAcoesAsana(nomeSquad, nomeEmpresa);
           const projectID = JSON.parse(localStorage.getItem('projectID'));
       
-          // Obter todas as seções usando a função já existente
           const sections = await getSections(projectID);
-          
-          // Encontrar a seção com o nome "MacroAcoes"
           const targetSection = sections.find(section => section.name === "Macro Ações");
       
           if (!targetSection) {
@@ -1027,7 +1185,7 @@
                       method: 'POST',
                       headers: {
                           'Content-Type': 'application/json',
-                          'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                          'Authorization': empresaObj.token
                       },
                       body: JSON.stringify(data)
                   });
@@ -1047,7 +1205,7 @@
                           method: 'POST',
                           headers: {
                               'Content-Type': 'application/json',
-                              'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8'
+                              'Authorization': empresaObj.token
                           },
                           body: JSON.stringify(moveData)
                       });
@@ -1062,9 +1220,9 @@
           }
       }
       
-      async function getMacroAcoesAsana(nomeSquad) {
+      async function getMacroAcoesAsana(nomeSquad, nomeEmpresa) {
           try {
-              const response = await fetch(`/get_macro_acoes?nome_squad=${nomeSquad}`);
+              const response = await fetch(`/get_macro_acoes?nome_squad=${nomeSquad}&nome_empresa=${nomeEmpresa}`);
               if (response.ok) {
                   return await response.json();
               } else {
@@ -1077,15 +1235,40 @@
           }
       }
 
+      async function getTarefaIdFromName(tarefaNome) {
+        const url = `/api/get-tarefa-id?nome=${encodeURIComponent(tarefaNome)}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.error) {
+                console.error("Erro ao obter ID da tarefa:", data.error);
+                return null;
+            }
+
+            return data.id;
+        } catch (error) {
+            console.error("Erro ao obter ID da tarefa:", error);
+            return null;
+        }
+    }
+
       async function createTarefasMetasSemanaisTasksAsana() {
         const nomeSquad = document.getElementById('nome_squad_asana').value;
-        const tarefasMetasSemanais = await getTarefasMetasSemanais(nomeSquad);
+        const nomeEmpresa = document.getElementById('nome_empresa_asana').value;
+        const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+        const empresaObj = empresasTokens.find(e => e.nome === nomeEmpresa);
+    
+        if (!empresaObj) {
+            console.error("Empresa não encontrada no array empresasTokens.");
+            return;
+        }
+    
+        const tarefasMetasSemanais = await getTarefasMetasSemanais(nomeSquad, nomeEmpresa);
         const projectID = JSON.parse(localStorage.getItem('projectID'));
     
-        // Obter todas as seções usando a função já existente
         const sections = await getSections(projectID);
-    
-        // Encontrar a seção com o nome "Meta semanal e Tarefas"
         const targetSection = sections.find(section => section.name === "Meta semanal e Tarefas");
     
         if (!targetSection) {
@@ -1093,24 +1276,29 @@
             return;
         }
     
-        for (const tarefa of tarefasMetasSemanais) {
-          console.log("Tarefa atual:", tarefa); // Log aqui
-
-          var url = "https://app.asana.com/api/1.0/tasks";
-          var data = {
-              "data": {
-                  "name": tarefa,
-                  "projects": [projectID]
-              }
-          };
+        for (const tarefaNome of tarefasMetasSemanais) {
+          const tarefaId = await getTarefaIdFromName(tarefaNome);
+  
+          const metaSemanal = await getMetaSemanalFromDB(tarefaId);
+          
+          // Supondo que tarefa.id seja o ID da tarefa
+    
+            var url = "https://app.asana.com/api/1.0/tasks";
+            var data = {
+                "data": {
+                    "name": tarefaNome,
+                    "notes": metaSemanal, // Adicionando a descrição meta_semanal
+                    "projects": [projectID]
+                }
+            };
     
             try {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
-                      },
+                        'Authorization': empresaObj.token
+                    },
                     body: JSON.stringify(data)
                 });
     
@@ -1129,8 +1317,8 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': 'Bearer 1/1205186190607018:e2869ebb0d15fa8f7a880b27168fa4d8',
-                          },
+                            'Authorization': empresaObj.token
+                        },
                         body: JSON.stringify(moveData)
                     });
     
@@ -1143,9 +1331,9 @@
         }
     }
     
-    async function getTarefasMetasSemanais(nomeSquad) {
+    async function getTarefasMetasSemanais(nomeSquad, nomeEmpresa) {
       try {
-          const response = await fetch(`/get_tarefas_metas_semanais?nome_squad=${nomeSquad}`);
+          const response = await fetch(`/get_tarefas_metas_semanais?nome_squad=${nomeSquad}&nome_empresa=${nomeEmpresa}`);
           const result = await response.json();
           console.log("Resposta da API:", result); // Log aqui
           return result;
@@ -1154,6 +1342,92 @@
           return [];
       }
   }
+
+  async function criarBoardMonday(event) {
+    event.preventDefault(); // Evitar o recarregamento da página
+  
+    const nomeSquadSelect = document.getElementById('nome_squad_monday').value;
+    const apiKey = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjI3NDYxNzYzMiwiYWFpIjoxMSwidWlkIjo0NzA5MzAwOCwiaWFkIjoiMjAyMy0wOC0xMVQxODowNjo1MC4yODNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTgyNDYyNDgsInJnbiI6InVzZTEifQ.Xql1VwfHOeOlRS08vU9fm12TNd3gD9FgK05M9Y2BZqc'; // Substitua com seu token de API
+  
+    const query = `
+      mutation {
+        create_board (board_name: "${nomeSquadSelect}", board_kind: public) {
+          id
+        }
+      }`;
+  
+    try {
+      const response = await fetch("https://api.monday.com/v2", {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': apiKey
+        },
+        body: JSON.stringify({
+          'query': query
+        })
+      });
+  
+      const data = await response.json();
+      console.log('Board criado com sucesso:', data);
+      const boardId = data.data.create_board.id;
+  
+      // Chamar a função para criar os grupos
+  
+      // Chamar a função para criar as seções (colunas) no quadro
+      await criarSecoesMonday(boardId, apiKey);
+    } catch (error) {
+      console.error('Erro ao criar o board:', error);
+    }
+  }
+  
+  
+async function criarSecoesMonday(boardId, apiKey) {
+  const secoes = ["Tarefas concluídas", "Tarefas em andamento", "Meta semanal e Tarefas", "Macro Ações", "KR", "Objetivo"];
+  const columnIds = {};
+
+  for (let nomeSecao of secoes) {
+    // Utilize uma mutação para criar uma coluna
+    const query = `
+      mutation {
+        create_column (board_id: ${boardId}, title: "${nomeSecao}", column_type: text) {
+          id
+          title
+        }
+      }
+    `;
+
+    try {
+      const response = await fetch("https://api.monday.com/v2", {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': apiKey
+        },
+        body: JSON.stringify({
+          'query': query
+        })
+      });
+
+      if (!response.ok) {
+        console.error("Erro ao criar a coluna:", await response.text());
+        continue; // Pula para a próxima iteração se houver um erro
+      }
+
+      const responseData = await response.json();
+      console.log("Coluna '" + nomeSecao + "' criada com sucesso:", responseData);
+
+      // Adicionar o ID da coluna ao objeto columnIds
+      columnIds[nomeSecao] = responseData.data.create_column.id;
+    } catch (error) {
+      console.error("Houve um erro ao criar a coluna '" + nomeSecao + "':", error);
+    }
+  }
+
+  // Armazenar os IDs das colunas em algum lugar, como localStorage
+  localStorage.setItem('mondayColumnIds', JSON.stringify(columnIds));
+}
+
 
 
         
@@ -1203,3 +1477,5 @@
         }
     </style>
 {% endblock %}
+
+<!-- ES360 Asana: 1/1205186190607018:cb1b4f178c3fecb0fb634508aa56d915 -->

@@ -73,6 +73,12 @@
           populateTable(originalData);
         }
 
+        function formatDate(dateString) {
+          if (!dateString) return ""; // Retorna "N/A" se a data não estiver preenchida
+        
+          var dateParts = dateString.split('-');
+          return dateParts[2] + '/' + dateParts[1] + '/' + dateParts[0];
+        }
 
         function fetchTarefasConcluidas() {
             fetch('/get_tarefas_concluidas') // Altere para a rota correta
