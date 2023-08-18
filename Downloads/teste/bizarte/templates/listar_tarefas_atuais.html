@@ -10,7 +10,6 @@
                 <th>Nome da Tarefa</th>
                 <th>Sub Tarefas</th>
                 <th>Descrição</th>
-                <th>Posição do card</th>
                 <th>Data de início</th>
                 <th>Data de conclusão</th>
                 <th>Nome da Empresa</th>
@@ -90,6 +89,64 @@
       
       // Chamar a função quando a página for carregada
       fetchTarefasAtuais();
+      fetchAsanaTasksAndCompare();
+
+      async function fetchAsanaTasksAndCompare() {
+    const plataforma = localStorage.getItem('plataformaAsana');
+    const empresasTokens = JSON.parse(localStorage.getItem('empresasTokens'));
+    const asanaTasks = [];
+
+    for (const empresa of empresasTokens) {
+        const workSette = empresa.workspace;
+
+        const projectsResponse = await fetch(`https://app.asana.com/api/1.0/workspaces/${workSette}/projects?archived=false`, {
+            method: 'GET',
+            headers: {
+                'Authorization': empresa.token,
+                'Accept': 'application/json'
+            }
+        });
+        const projectsData = await projectsResponse.json();
+
+        for (const project of projectsData.data) {
+            const projectId = project.gid;
+
+            const sectionsResponse = await fetch(`https://app.asana.com/api/1.0/projects/${projectId}/sections`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': empresa.token,
+                    'Accept': 'application/json'
+                }
+            });
+            const sectionsData = await sectionsResponse.json();
+
+            const section = sectionsData.data.find(s => s.name === "Tarefas em andamento");
+            if (section) {
+                const tasksResponse = await fetch(`https://app.asana.com/api/1.0/sections/${section.gid}/tasks`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': empresa.token,
+                        'Accept': 'application/json'
+                    }
+                });
+                const tasksData = await tasksResponse.json();
+
+                for (const task of tasksData.data) {
+                    asanaTasks.push(task.name);
+                }
+                console.log("Tarefas do Asana:", asanaTasks);
+
+            }
+        }
+    }
+
+    // Comparação das tarefas
+    for (const tarefa of originalData) {
+        if (!asanaTasks.includes(tarefa.nome_tarefa)) {
+            deleteTarefa(tarefa.id);
+        }
+    }
+}
 
       function formatDate(dateString) {
         if (!dateString) return ""; // Retorna "N/A" se a data não estiver preenchida
@@ -108,14 +165,14 @@
           var tdName = document.createElement('td');
           tdName.textContent = data[i].nome_tarefa;
           tr.appendChild(tdName);
+
+          var tdSub = document.createElement('td');
+          tdSub.textContent = data[i].subtarefas;
+          tr.appendChild(tdSub);
       
           var tdDesc = document.createElement('td');
           tdDesc.textContent = data[i].desc;
           tr.appendChild(tdDesc);
-      
-          var tdPos = document.createElement('td');
-          tdPos.textContent = data[i].pos;
-          tr.appendChild(tdPos);
       
           var tdStart = document.createElement('td');
           tdStart.textContent = formatDate(data[i].start); // Chamando a função para formatar a data

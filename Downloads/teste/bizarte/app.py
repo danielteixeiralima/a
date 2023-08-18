@@ -1271,8 +1271,15 @@ def cadastrar_kr():
 def get_squad_id():
     try:
         squad_name = request.args.get('squad_name')
-        print(squad_name)
-        squad = Squad.query.filter_by(nome_squad=squad_name).first()
+        empresa_name = request.args.get('empresa_name')
+        print(squad_name, empresa_name)
+        
+        # Filtrando por nome_squad e nome da empresa usando join
+        squad = db.session.query(Squad).join(Empresa).filter(
+            Squad.nome_squad == squad_name,
+            Empresa.nome_contato == empresa_name
+        ).first()
+        
         if not squad:
             return jsonify(success=False, error="Squad não encontrado")
         return jsonify(success=True, squad_id=squad.id)
@@ -1285,23 +1292,21 @@ def cadastrar_tarefas_atuais():
         tarefas_data = request.json['tarefas']
         for tarefa_data in tarefas_data:
             
-            # Obter a empresa pelo nome_contato (ou o campo correto que representa o nome da empresa)
             empresa = Empresa.query.filter_by(nome_contato=tarefa_data['empresa']).first()
             if not empresa:
                 return jsonify(success=False, error="Empresa não encontrada")
 
-            # Obter o squad pelo ID
             squad = Squad.query.filter_by(id=tarefa_data['squad_id'], empresa_id=empresa.id).first()
             if not squad:
                 return jsonify(success=False, error="Squad não encontrado")
 
-            # Criar a tarefa
             tarefa = TarefasAndamento(
                 empresa=tarefa_data['empresa'],
-                squad_name=tarefa_data['squad_name'], # Se 'squad_name' deve ser usado, ajuste a lógica conforme necessário
+                squad_name=tarefa_data['squad_name'],
                 squad_id=squad.id,
-                tarefa=tarefa_data['tarefa'], # Isso parece ser uma data, ajuste conforme necessário
-                data_inclusao=datetime.utcnow()
+                tarefa=tarefa_data['tarefa'],
+                data_inclusao=datetime.utcnow(),
+                subtarefas=tarefa_data.get('subtarefas', {})
             )
             db.session.add(tarefa)
         db.session.commit()
@@ -1343,10 +1348,11 @@ def cadastrar_tarefas_concluidas():
 def get_tarefas_atuais():
     try:
         tarefas = TarefasAndamento.query.all()
+        print(tarefas)
         result = []
         for tarefa in tarefas:
             result.append({
-                'id': tarefa.id,  # Inclua o ID da tarefa aqui
+                'id': tarefa.id,
                 'nome_tarefa': tarefa.tarefa,
                 'desc': tarefa.descricao_empresa if hasattr(tarefa, 'descricao_empresa') else '',
                 'pos': tarefa.squad_name,
@@ -1354,7 +1360,8 @@ def get_tarefas_atuais():
                 'close': tarefa.data_conclusao.strftime('%Y-%m-%d') if tarefa.data_conclusao else '',
                 'nome_empresa': tarefa.empresa,
                 'nome_squad': tarefa.squad_name,
-                'plataforma': '' # Adicione o campo de plataforma se necessário
+                'plataforma': '',  # Adicione o campo de plataforma se necessário
+                'subtarefas': tarefa.subtarefas  # Adicionando o campo subtarefas
             })
         return jsonify(result)
     except Exception as e:

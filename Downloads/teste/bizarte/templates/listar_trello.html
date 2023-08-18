@@ -47,33 +47,38 @@
       var originalData = [];
 
       async function cadastrarTarefasAtuais() {
-        event.preventDefault();
-        var tarefas = [];
-    
-        var tabela = document.getElementById('trello-table-body');
-    
-        for (var row of tabela.rows) {
-            var squadName = row.cells[7].textContent;
-            var status = row.cells[3].textContent;
-            try {
-                let response = await fetch('/get_squad_id?squad_name=' + encodeURIComponent(squadName));
-                let data = await response.json();
-                console.log(data)
-    
-                if (data.success) {
-                    tarefas.push({
-                        empresa: row.cells[5].textContent,
-                        squad_name: squadName,
-                        squad_id: data.squad_id, // Obtendo o ID do esquadrão
-                        tarefa: row.cells[0].textContent,
-                    });
-                } else {
-                    console.log('Erro ao obter ID do esquadrão:', data.error);
-                }
-            } catch (error) {
-                console.log('Erro na chamada fetch:', error);
+    event.preventDefault();
+    var tarefas = [];
+
+    var tabela = document.getElementById('trello-table-body');
+
+    for (var row of tabela.rows) {
+        var squadName = row.cells[7].textContent;
+        var empresaName = row.cells[6].textContent;
+        var status = row.cells[3].textContent;
+        
+        // Supondo que as subtarefas são separadas por vírgulas
+        var subtarefasList = row.cells[1].textContent.split(',').map(subtarefa => ({name: subtarefa.trim()}));
+        
+        try {
+            let response = await fetch('/get_squad_id?squad_name=' + encodeURIComponent(squadName) + '&empresa_name=' + encodeURIComponent(empresaName));
+            let data = await response.json();
+
+            if (data.success) {
+                tarefas.push({
+                    empresa: empresaName,
+                    subtarefas: subtarefasList,
+                    squad_name: squadName,
+                    squad_id: data.squad_id,
+                    tarefa: row.cells[0].textContent,
+                });
+            } else {
+                console.log('Erro ao obter ID do esquadrão:', data.error);
             }
+        } catch (error) {
+            console.log('Erro na chamada fetch:', error);
         }
+    }
     
         try {
           if(status == "Tarefas em andamento"){

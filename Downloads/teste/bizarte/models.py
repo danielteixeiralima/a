@@ -247,6 +247,7 @@ class TarefasMetasSemanais(db.Model):
     data_inclusao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     data_conclusao = db.Column(db.DateTime)
     squad = db.relationship('Squad', backref='tarefas')
+    subtarefas = db.Column(db.JSON)
 
     def _init_(self, empresa, squad_name, tarefa, meta_semanal, data_conclusao=None, subtarefas=None):
         self.empresa = empresa
@@ -266,6 +267,7 @@ class TarefasAndamento(db.Model):
     tarefa = db.Column(db.Text, nullable=False)
     data_inclusao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     data_conclusao = db.Column(db.DateTime)
+    subtarefas = db.Column(db.JSON)  # Campo JSON para subtarefas
     squad = db.relationship('Squad', backref='tarefas_atuais')
 
 class TarefasFinalizadas(db.Model):
